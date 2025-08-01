@@ -204,6 +204,8 @@ class JoinPage(tk.Frame):
         jloginBtn = tk.Button(self, image=jloginImg, bd=0, command=show)
         jloginBtn.place(x=68, y=850)
 
+
+
 # ==== 실행 ====
 if __name__ == "__main__":
     app = App()
