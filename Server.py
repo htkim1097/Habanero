@@ -2,10 +2,12 @@ import Config
 import socket
 import threading
 import pymysql
+from Msg import message, MessageType
+import copy
 
 class ThreadsServer:
     def __init__(self):
-        self.address = Config.comm_config["address"]
+        self.address = Config.comm_config["host"]
         self.port = Config.comm_config["port"]
         self.baudrate = Config.comm_config["baudrate"]
         self.db_address = Config.db_config["host"]
@@ -56,21 +58,49 @@ class ThreadsServer:
                 if not data:
                     break
 
-                print(f"[데이터 송신:{address}] - {data.decode()}")
+                en_data = data.decode()
+                print(f"[데이터 수신 {address}] - {en_data}")
 
-                client_socket.send(data)
-        except:
-            print("에러 발생")
+                repr_data = eval(en_data)
+
+                res = self.handle_data(repr_data)
+
+                client_socket.send(str(res).encode())
+        except Exception as e:
+            print(f"[오류:handle_client] - {e}")
         finally:
             client_socket.close()
 
-    def stop_server(self):
+    def handle_data(self, data):
+        d_type = int(data["type"])
+
+        try:
+            if d_type == MessageType.LOGIN:
+                self.handle_login(data)
+            elif d_type == MessageType.REGISTER:
+                self.handle_register(data)
+            else:
+                raise Exception("data type 오류: 클라이언트로부터 받은 데이터의 type 값에 오류가 있습니다.")
+            
+        except Exception as e:
+            print(f"[오류:handle_data] - {e}")
+
+    def handle_login(self, data):
         """
-        서버 종료에 필요한 절차들을 실행한다.
+        로그인 정보를 확인하여 
         """
-        pass
+        return self.send_query(f"SELECT * FROM user WHERE user_id = '{data["id"]}' AND password = '{data["password"]}';")
+
+    def handle_register(self, data):
+        """
+        회원가입에서 입력한 값들로 user 테이블에 데이터를 추가한다. 
+        """
+        return self.send_query(f"INSERT INTO user VALUES ('{data["id"]}', '{data["email"]}', '{data["password"]}', '{data["name"]}', '{data["profile_image"]}');")
 
     def send_query(self, query):
+        """
+        DB에 연결하여 쿼리를 전송하고, 결과값을 수신한다.
+        """
         try:
             conn = pymysql.connect(
                 host = self.db_address,
@@ -78,29 +108,27 @@ class ThreadsServer:
                 user = self.db_user,
                 password = self.db_password,
                 charset = self.db_charset,
-                database = None
+                autocommit=True,
+                database = "threads_db"
             )
 
             cur = conn.cursor()
             cur.execute(query)
 
-            db_data = cur.fetchall()
-
-            res = {
-                "data" : db_data
-            }
-
-            conn.commit()
+            res = cur.fetchall()
             conn.close()
 
-            data = ""
-            for d in db_data:
-                data += f"{d[0]},"
-
-            return str(res).encode()
-        except:
-            print("send_query() 오류")
+            print(f"[DB 결과] - {res}")
+            return res
+        except Exception as e:
+            print(f"[오류:send_query] - {e}")
             return None
+        
+    def stop_server(self):
+        """
+        서버 종료에 필요한 절차들을 실행한다.
+        """
+        pass
 
 
 if __name__ == "__main__":

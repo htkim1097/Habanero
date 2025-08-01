@@ -2,6 +2,10 @@ import tkinter as tk
 from tkinter import ttk, font
 from PIL import ImageTk, Image
 from os import path
+import socket
+from Msg import message, MessageType
+import Config
+from copy import deepcopy
 
 # 이미지 경로
 img_path = path.dirname(path.abspath(__file__)) + "\\images\\"
@@ -31,12 +35,17 @@ def on_focusout(entry, string):
         entry.insert(0, string)
 
 class App(tk.Tk):
+    socket_family = Config.comm_config["socket_family"]
+    socket_type = Config.comm_config["socket_type"]
+    host = Config.comm_config["host"]
+    port = Config.comm_config["port"]
+    baudrate = Config.comm_config["baudrate"]
+
     def __init__(self):
         super().__init__()
         self.title("Threads")
         self.geometry("471x954")
         self.resizable(False, False)
-
         self.frames = {}
 
         for F in (LoginPage, JoinPage):
@@ -50,6 +59,25 @@ class App(tk.Tk):
     def show_frame(self, page_name):
         frame = self.frames[page_name]
         frame.tkraise()
+
+    @classmethod
+    def encode_db(cls, data):
+        client_socket = socket.socket(cls.socket_family, cls.socket_type)
+        client_socket.connect((cls.host, cls.port))
+
+        try:
+            while True:
+                send_data = str(data).encode()
+                client_socket.send(send_data)
+                print(f"[데이터 송신] - {send_data}")
+
+                recv_data = client_socket.recv(cls.baudrate)
+                print(f"[데이터 수신] - {recv_data}")
+
+                return recv_data
+        finally:
+            client_socket.close()
+
 
 # 로그인 화면 실행
 class LoginPage(tk.Frame):
@@ -95,7 +123,7 @@ class LoginPage(tk.Frame):
         # 로그인 파란색 버튼
         lImg = Image.open(img_path + 'loginBtn.png')
         loginImg = ImageTk.PhotoImage(lImg)
-        loginBtn = tk.Button(self, image=loginImg, bd=0, command=show)
+        loginBtn = tk.Button(self, image=loginImg, bd=0, command=lambda : App.encode_db(self.get_login_info(idEntry.get(), pwEntry.get())))
         loginBtn.place(x=30, y=595)
 
 
@@ -104,6 +132,14 @@ class LoginPage(tk.Frame):
         joinImg = ImageTk.PhotoImage(jImg)
         joinBtn = tk.Button(self, image=joinImg, bd=0, command=lambda: controller.show_frame("JoinPage"))
         joinBtn.place(x=160, y=895)
+
+    def get_login_info(self, id, password):
+        msg = message.copy()
+        msg["type"] = MessageType.LOGIN
+        msg["id"] = id
+        msg["password"] = password
+        print(msg)
+        return msg
 
 
 

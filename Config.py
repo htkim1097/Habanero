@@ -3,7 +3,7 @@ import socket
 comm_config = {
     "socket_family" : socket.AF_INET, 
     "socket_type" : socket.SOCK_STREAM,
-    "address" : "localhost",
+    "host" : "localhost",
     "port" : 8080,
     "baudrate" : 1024,
 }
