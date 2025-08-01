@@ -1,5 +1,6 @@
 import tkinter as tk
 import Frames
+import socket
 
 class App(tk.Tk):
     def __init__(self):
@@ -21,6 +22,19 @@ class App(tk.Tk):
     def show_frame(self, page_name):
         frame = self.frames[page_name]
         frame.tkraise()
+
+
+    def encode_db(data):
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect(("192.168.0.69", 9999))
+
+        try:
+            while True:
+                client_socket.send(data.encode())
+                return client_socket.recv(1024)
+        finally:
+            client_socket.close()
+
 
 # ==== 실행 ====
 if __name__ == "__main__":
