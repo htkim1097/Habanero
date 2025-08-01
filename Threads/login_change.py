@@ -81,7 +81,7 @@ class LoginPage(tk.Frame):
 
 
         # 로그인 비밀번호 입력
-        pImg = Image.open('id.png')
+        pImg = Image.open('images/id.png')
         pwImg = ImageTk.PhotoImage(pImg)
         pwLabel = tk.Label(self, image=pwImg)
         pwLabel.place(x=30, y=500)
@@ -138,7 +138,7 @@ class JoinPage(tk.Frame):
 
 
         # 회원가입 아이디 입력
-        jiImg = Image.open('id.png')
+        jiImg = Image.open('images/id.png')
         jidImg = ImageTk.PhotoImage(jiImg)
         jidLabel = tk.Label(self, image=jidImg)
         jidLabel.place(x=30, y=420)
@@ -151,7 +151,7 @@ class JoinPage(tk.Frame):
 
 
         # 회원가입 비밀번호 입력
-        jpImg = Image.open('id.png')
+        jpImg = Image.open('images/id.png')
         jpwImg = ImageTk.PhotoImage(jpImg)
         jpwLabel = tk.Label(self, image=jpwImg)
         jpwLabel.place(x=30, y=500)
