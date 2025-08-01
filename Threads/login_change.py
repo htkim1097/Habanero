@@ -28,6 +28,7 @@ home3Img = None
 home4Img = None
 home5Img = None
 # ======================================
+img_path = "../images/"
 
 
 # 테스트용
@@ -84,14 +85,14 @@ class LoginPage(tk.Frame):
 
         global bgImg, loginImg, joinImg, idImg, pwImg, errorImg, closeImg, checkImg
 
-        bgImg = ImageTk.PhotoImage(Image.open('images/Threads.png'))
+        bgImg = ImageTk.PhotoImage(Image.open(img_path + 'Threads.png'))
 
         # 배경
         label = tk.Label(self, image=bgImg)
         label.place(x=-2, y=-2)
 
         # 로그인 아이디 입력
-        idImg = ImageTk.PhotoImage(Image.open('images/id.png'))
+        idImg = ImageTk.PhotoImage(Image.open(img_path + 'id.png'))
         idLabel = tk.Label(self, image=idImg)
         idLabel.place(x=30, y=420)
 
@@ -102,7 +103,7 @@ class LoginPage(tk.Frame):
         idEntry.bind('<FocusOut>', lambda e: on_focusout(idEntry, "사용자 아이디"))
 
         # 로그인 비밀번호 입력
-        pwImg = ImageTk.PhotoImage(Image.open('images/id.png'))
+        pwImg = ImageTk.PhotoImage(Image.open(img_path + 'id.png'))
         pwLabel = tk.Label(self, image=pwImg)
         pwLabel.place(x=30, y=500)
 
@@ -113,7 +114,7 @@ class LoginPage(tk.Frame):
         pwEntry.bind('<FocusOut>', lambda e: on_focusout(pwEntry, "비밀번호"))
 
         # 로그인 파란색 버튼
-        lImg = Image.open('images/loginBtn.png')
+        lImg = Image.open(img_path + 'loginBtn.png')
         loginImg = ImageTk.PhotoImage(lImg)
         # 홈 화면 출력
         loginBtn = tk.Button(self, image=loginImg, bd=0, command=lambda: controller.show_frame("HomePage"))
@@ -123,7 +124,7 @@ class LoginPage(tk.Frame):
         loginBtn.place(x=30, y=595)
 
         # 회원가입
-        joinImg = ImageTk.PhotoImage(Image.open('images/join.png'))
+        joinImg = ImageTk.PhotoImage(Image.open(img_path + 'join.png'))
         joinBtn = tk.Button(self, image=joinImg, bd=0, command=lambda: controller.show_frame("JoinPage"))
         joinBtn.place(x=160, y=895)
 
@@ -132,17 +133,17 @@ class LoginPage(tk.Frame):
         self.error_frame.place(x=60, y=400)
         self.error_frame.place_forget()
 
-        errorImg = ImageTk.PhotoImage(Image.open("images/error.png"))
+        errorImg = ImageTk.PhotoImage(Image.open(img_path + "error.png"))
         frame = tk.Label(self.error_frame, image=errorImg, bg="white")
         frame.image = errorImg
         frame.pack()
 
-        closeImg = ImageTk.PhotoImage(Image.open("images/close.png"))
+        closeImg = ImageTk.PhotoImage(Image.open(img_path + "close.png"))
         closeBtn = tk.Button(self.error_frame, image=closeImg, bd=0, command=self.hide_error)
         closeBtn.image = closeImg
         closeBtn.place(x=300, y=15)
 
-        checkImg = ImageTk.PhotoImage(Image.open("images/check.png"))
+        checkImg = ImageTk.PhotoImage(Image.open(img_path + "check.png"))
         checkBtn = tk.Button(self.error_frame, image=checkImg, bd=0, command=self.hide_error)
         checkBtn.image = checkImg
         checkBtn.place(x=280, y=130)
@@ -170,7 +171,7 @@ class JoinPage(tk.Frame):
         jlabel.place(x=20, y=250)
 
         # 회원가입 이름 입력
-        nameImg = ImageTk.PhotoImage(Image.open('images/id.png'))
+        nameImg = ImageTk.PhotoImage(Image.open(img_path + 'id.png'))
         nameLabel = tk.Label(self, image=nameImg)
         nameLabel.place(x=30, y=340)
 
@@ -182,7 +183,7 @@ class JoinPage(tk.Frame):
 
 
         # 회원가입 아이디 입력
-        jidImg = ImageTk.PhotoImage(Image.open('images/id.png'))
+        jidImg = ImageTk.PhotoImage(Image.open(img_path + 'id.png'))
         jidLabel = tk.Label(self, image=jidImg)
         jidLabel.place(x=30, y=420)
 
@@ -193,7 +194,7 @@ class JoinPage(tk.Frame):
         jidEntry.bind('<FocusOut>', lambda e: on_focusout(jidEntry, "사용자 아이디"))
 
         # 회원가입 비밀번호 입력
-        jpwImg = ImageTk.PhotoImage(Image.open('images/id.png'))
+        jpwImg = ImageTk.PhotoImage(Image.open(img_path + 'id.png'))
         jpwLabel = tk.Label(self, image=jpwImg)
         jpwLabel.place(x=30, y=500)
 
@@ -204,7 +205,7 @@ class JoinPage(tk.Frame):
         jpwEntry.bind('<FocusOut>', lambda e: on_focusout(jpwEntry, "비밀번호"))
 
         # 회원가입 파란색 버튼
-        jloginImg = ImageTk.PhotoImage(Image.open('images/joinBtn.png'))
+        jloginImg = ImageTk.PhotoImage(Image.open(img_path + 'joinBtn.png'))
         jloginBtn = tk.Button(self, image=jloginImg, bd=0, command=show)
         jloginBtn.place(x=68, y=850)
 
@@ -222,38 +223,38 @@ class HomePage(tk.Frame):
         self.configure(bg="black")
 
         # 홈 맨 왼쪽 위
-        homeLeftImg = ImageTk.PhotoImage(Image.open('images/homeLeft.png'))
+        homeLeftImg = ImageTk.PhotoImage(Image.open(img_path + 'homeLeft.png'))
         homeLeftBtn = tk.Button(self, image=homeLeftImg, bd=0, background="black" ,relief="flat", highlightthickness=0, command=show)
         homeLeftBtn.place(x=0, y=0)
 
         # 홈 맨 위 가운데 로고
-        homeLogoImg = ImageTk.PhotoImage(Image.open('images/homeLogo.png'))
+        homeLogoImg = ImageTk.PhotoImage(Image.open(img_path + 'homeLogo.png'))
         homeLogoBtn = tk.Button(self, image=homeLogoImg, bd=0, background="black" ,relief="flat", highlightthickness=0, command=show)
         homeLogoBtn.place(x=175, y=0)
 
         # 홈 맨 위 오른쪽
-        homeRightImg = ImageTk.PhotoImage(Image.open('images/homeRight.png'))
+        homeRightImg = ImageTk.PhotoImage(Image.open(img_path + 'homeRight.png'))
         homeRightBtn = tk.Button(self, image=homeRightImg, bd=0, background="black" ,relief="flat", highlightthickness=0, command=show)
         homeRightBtn.place(x=350, y=0)
 
         # 홈 맨 아래 아이콘들
-        home1Img = ImageTk.PhotoImage(Image.open('images/home1.png'))
+        home1Img = ImageTk.PhotoImage(Image.open(img_path + 'home1.png'))
         home1Btn = tk.Button(self, image=home1Img, bd=0, background="black" ,relief="flat", highlightthickness=0, command=show)
         home1Btn.place(x=5, y=860)
 
-        home2Img = ImageTk.PhotoImage(Image.open('images/home2.png'))
+        home2Img = ImageTk.PhotoImage(Image.open(img_path + 'home2.png'))
         home2Btn = tk.Button(self, image=home2Img, bd=0, background="black", relief="flat", highlightthickness=0, command=show)
         home2Btn.place(x=95, y=860)
 
-        home3Img = ImageTk.PhotoImage(Image.open('images/home3.png'))
+        home3Img = ImageTk.PhotoImage(Image.open(img_path + 'home3.png'))
         home3Btn = tk.Button(self, image=home3Img, bd=0, background="black", relief="flat", highlightthickness=0, command=show)
         home3Btn.place(x=185, y=860)
 
-        home4Img = ImageTk.PhotoImage(Image.open('images/home4.png'))
+        home4Img = ImageTk.PhotoImage(Image.open(img_path + 'home4.png'))
         home4Btn = tk.Button(self, image=home4Img, bd=0, background="black", relief="flat", highlightthickness=0, command=show)
         home4Btn.place(x=275, y=860)
 
-        home5Img = ImageTk.PhotoImage(Image.open('images/home5.png'))
+        home5Img = ImageTk.PhotoImage(Image.open(img_path + 'home5.png'))
         home5Btn = tk.Button(self, image=home5Img, bd=0, background="black", relief="flat", highlightthickness=0, command=show)
         home5Btn.place(x=365, y=860)
 
