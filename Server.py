@@ -53,12 +53,10 @@ class ThreadsServer:
             while True:
                 data = client_socket.recv(baudrate)
 
-                # if not data:
-                #     continue
+                if not data:
+                    break
 
                 print(f"[데이터 송신:{address}] - {data.decode()}")
-
-                
 
                 client_socket.send(data)
         except:

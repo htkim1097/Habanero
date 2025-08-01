@@ -7,7 +7,9 @@ class MessageType:
     GET_NOTIFICATIONS = 5
     LIKE_POST = 6   
 
-message = {
-    "type" : MessageType.NONE,
-    "data" : None    
-}
+class Message:
+    def __init__(self, type, id, password):
+        self.type = MessageType.NONE
+        self.id = id
+        self.password = password
+    
