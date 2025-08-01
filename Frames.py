@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk, font
 from PIL import ImageTk, Image
 
+img_path = "ThreadsApp\Threads\images\\"
+
 # 이미지 객체를 전역 변수로 선언해서 참조 유지
 bgImg = None
 idImg = None
@@ -35,7 +37,7 @@ class LoginPage(tk.Frame):
         global bgImg, loginImg, joinImg, idImg, pwImg
 
         #bimg = Image.open('Threads.png')
-        bgImg = ImageTk.PhotoImage(Image.open('images/Threads.png'))
+        bgImg = ImageTk.PhotoImage(Image.open(img_path + 'Threads.png'))
 
         # 배경을 Label을 이용하여 처리
         label = tk.Label(self, image=bgImg)
@@ -44,7 +46,7 @@ class LoginPage(tk.Frame):
 
         # 로그인 아이디 입력
         #iImg = Image.open('id.png')
-        idImg = ImageTk.PhotoImage(Image.open('images/id.png'))
+        idImg = ImageTk.PhotoImage(Image.open(img_path + 'id.png'))
         idLabel = tk.Label(self, image=idImg)
         idLabel.place(x=30, y=420)
 
@@ -56,7 +58,7 @@ class LoginPage(tk.Frame):
 
 
         # 로그인 비밀번호 입력
-        pImg = Image.open('id.png')
+        pImg = Image.open(img_path + 'id.png')
         pwImg = ImageTk.PhotoImage(pImg)
         pwLabel = tk.Label(self, image=pwImg)
         pwLabel.place(x=30, y=500)
@@ -68,14 +70,14 @@ class LoginPage(tk.Frame):
 
 
         # 로그인 파란색 버튼
-        lImg = Image.open('images/loginBtn.png')
+        lImg = Image.open(img_path + 'loginBtn.png')
         loginImg = ImageTk.PhotoImage(lImg)
         loginBtn = tk.Button(self, image=loginImg, bd=0, command=show)
         loginBtn.place(x=30, y=595)
 
 
         # 회원가입
-        jImg = Image.open('images/join.png')
+        jImg = Image.open(img_path + 'join.png')
         joinImg = ImageTk.PhotoImage(jImg)
         joinBtn = tk.Button(self, image=joinImg, bd=0, command=lambda: controller.show_frame("JoinPage"))
         joinBtn.place(x=160, y=895)
@@ -100,7 +102,7 @@ class JoinPage(tk.Frame):
         jlabel.place(x=20, y=250)
 
         # 회원가입 이름 입력
-        nImg = Image.open('images/id.png')
+        nImg = Image.open(img_path + 'id.png')
         nameImg = ImageTk.PhotoImage(nImg)
         nameLabel = tk.Label(self, image=nameImg)
         nameLabel.place(x=30, y=340)
@@ -113,7 +115,7 @@ class JoinPage(tk.Frame):
 
 
         # 회원가입 아이디 입력
-        jiImg = Image.open('id.png')
+        jiImg = Image.open(img_path + 'id.png')
         jidImg = ImageTk.PhotoImage(jiImg)
         jidLabel = tk.Label(self, image=jidImg)
         jidLabel.place(x=30, y=420)
@@ -126,7 +128,7 @@ class JoinPage(tk.Frame):
 
 
         # 회원가입 비밀번호 입력
-        jpImg = Image.open('id.png')
+        jpImg = Image.open(img_path + 'id.png')
         jpwImg = ImageTk.PhotoImage(jpImg)
         jpwLabel = tk.Label(self, image=jpwImg)
         jpwLabel.place(x=30, y=500)
@@ -138,7 +140,7 @@ class JoinPage(tk.Frame):
 
 
         # 회원가입 파란색 버튼
-        jlImg = Image.open('images/joinBtn.png')
+        jlImg = Image.open(img_path + 'joinBtn.png')
         jloginImg = ImageTk.PhotoImage(jlImg)
         jloginBtn = tk.Button(self, image=jloginImg, bd=0, command=show)
         jloginBtn.place(x=68, y=850)
