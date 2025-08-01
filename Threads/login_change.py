@@ -15,6 +15,11 @@ jidImg = None
 jpwImg = None
 jloginImg = None
 
+errorImg = None
+closeImg = None
+checkImg = None
+
+
 # 테스트용
 def show():
     print("hello")
@@ -50,6 +55,15 @@ def on_focusout(entry, string):
     if entry.get() == "":
         entry.insert(0, string)
 
+def show_error_popup(controller):
+    login_frame = controller.frames["LoginPage"]
+    login_frame.error_frame.place(x=60, y=300)
+
+def show_complete_popup(controller):
+    join_frame = controller.frames["JoinPage"]
+    join_frame.complete_frame.place(x=60, y=300)
+
+
 
 # 로그인 화면 실행
 class LoginPage(tk.Frame):
@@ -57,15 +71,13 @@ class LoginPage(tk.Frame):
         super().__init__(parent)
         self.controller = controller
 
-        global bgImg, loginImg, joinImg, idImg, pwImg
+        global bgImg, loginImg, joinImg, idImg, pwImg, errorImg, closeImg, checkImg
 
-        #bimg = Image.open('Threads.png')
         bgImg = ImageTk.PhotoImage(Image.open('images/Threads.png'))
 
         # 배경을 Label을 이용하여 처리
         label = tk.Label(self, image=bgImg)
         label.place(x=-2, y=-2)
-
 
         # 로그인 아이디 입력
         #iImg = Image.open('id.png')
@@ -95,7 +107,7 @@ class LoginPage(tk.Frame):
         # 로그인 파란색 버튼
         lImg = Image.open('images/loginBtn.png')
         loginImg = ImageTk.PhotoImage(lImg)
-        loginBtn = tk.Button(self, image=loginImg, bd=0, command=show)
+        loginBtn = tk.Button(self, image=loginImg, bd=0, command=lambda: show_error_popup(controller))
         loginBtn.place(x=30, y=595)
 
 
@@ -106,14 +118,39 @@ class LoginPage(tk.Frame):
         joinBtn.place(x=160, y=895)
 
 
+        #로그인 에러 창
+        self.error_frame = tk.Frame(self, width=350, height=180, bg="white")
+        self.error_frame.place(x=60, y=400)
+        self.error_frame.place_forget()
 
-# 회원가입 화면 실행
+        errorImg = ImageTk.PhotoImage(Image.open("images/error.png"))
+        frame = tk.Label(self.error_frame, image=errorImg, bg="white")
+        frame.image = errorImg
+        frame.pack()
+
+        closeImg = ImageTk.PhotoImage(Image.open("images/close.png"))
+        closeBtn = tk.Button(self.error_frame, image=closeImg, bd=0, command=self.hide_error)
+        closeBtn.image = closeImg
+        closeBtn.place(x=300, y=15)
+
+        checkImg = ImageTk.PhotoImage(Image.open("images/check.png"))
+        checkBtn = tk.Button(self.error_frame, image=checkImg, bd=0, command=self.hide_error)
+        checkBtn.image = checkImg
+        checkBtn.place(x=280, y=130)
+
+    def hide_error(self):
+        self.error_frame.place_forget()
+
+
+
+
+    # 회원가입 화면 실행
 class JoinPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
 
-        global nameImg, jidImg, jpwImg, jloginImg
+        global nameImg, jidImg, jpwImg, jloginImg, completeImg, checkImg, closeImg, jbackImg
 
         # 배경
         label = tk.Label(self, bg="white")
@@ -165,8 +202,42 @@ class JoinPage(tk.Frame):
         # 회원가입 파란색 버튼
         jlImg = Image.open('images/joinBtn.png')
         jloginImg = ImageTk.PhotoImage(jlImg)
-        jloginBtn = tk.Button(self, image=jloginImg, bd=0, command=show)
+        jloginBtn = tk.Button(self, image=jloginImg, bd=0, command=lambda: show_complete_popup(controller))
         jloginBtn.place(x=68, y=850)
+
+
+
+        #회원가입 뒤로 가기 버튼
+        jbackImg = Image.open('images/back.png')
+        jbackImg = ImageTk.PhotoImage(jbackImg)
+        jbackBtn = tk.Button(self, image=jbackImg, bd=0, command=lambda: controller.show_frame("LoginPage"))
+        jbackBtn.place(x=20, y=30)
+
+
+
+        #회원가입 완료 창
+        self.complete_frame = tk.Frame(self, width=350, height=180, bg="white")
+        self.complete_frame.place(x=60, y=400)
+        self.complete_frame.place_forget()
+
+        completeImg = ImageTk.PhotoImage(Image.open("images/complete.png"))
+        frame = tk.Label(self.complete_frame, image=completeImg, bg="white")
+        frame.image = completeImg
+        frame.pack()
+
+        closeImg = ImageTk.PhotoImage(Image.open("images/close.png"))
+        closeBtn = tk.Button(self.complete_frame, image=closeImg, bd=0, command=self.hide_error)
+        closeBtn.image = closeImg
+        closeBtn.place(x=300, y=15)
+
+        checkImg = ImageTk.PhotoImage(Image.open("images/check.png"))
+        checkBtn = tk.Button(self.complete_frame, image=checkImg, bd=0, command=self.hide_error)
+        checkBtn.image = checkImg
+        checkBtn.place(x=280, y=130)
+
+    def hide_error(self):
+        self.complete_frame.place_forget()
+
 
 
 
