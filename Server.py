@@ -33,7 +33,7 @@ class ThreadsServer:
         while self.is_running:
             try:
                 client_socket, address = self.socket.accept()
-                client_thread = threading.Thread(target=self.handle_client, args=(client_socket, address))
+                client_thread = threading.Thread(target=self.handle_client, args=(client_socket, address, self.baudrate))
 
                 # 메인 스레드 종료시 클라이언트 스레드도 종료되도록 데몬 스레드로 함
                 client_thread.daemon = True
@@ -43,7 +43,7 @@ class ThreadsServer:
                 print(f"[서버 오류] - {e}")
                 break
 
-    def handle_client(self, client_socket, address):
+    def handle_client(self, client_socket, address, baudrate):
         """
         클라이언트 연결 관련
         """
@@ -51,12 +51,14 @@ class ThreadsServer:
 
         try:
             while True:
-                data = client_socket.recv(self.baudrate)
+                data = client_socket.recv(baudrate)
 
-                if not data:
-                    continue
+                # if not data:
+                #     continue
 
                 print(f"[데이터 송신:{address}] - {data.decode()}")
+
+                
 
                 client_socket.send(data)
         except:
