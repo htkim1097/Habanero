@@ -1,18 +1,18 @@
-import config
+import Config
 import socket
 import threading
 import pymysql
 
 class ThreadsServer:
     def __init__(self):
-        self.address = config.comm_config["address"]
-        self.port = config.comm_config["port"]
-        self.baudrate = config.comm_config["baudrate"]
-        self.db_address = config.db_config["host"]
-        self.db_port = config.db_config["port"]
-        self.db_user = config.db_config["user"]
-        self.db_password = config.db_config["password"]
-        self.db_charset = config.db_config["charset"]
+        self.address = Config.comm_config["address"]
+        self.port = Config.comm_config["port"]
+        self.baudrate = Config.comm_config["baudrate"]
+        self.db_address = Config.db_config["host"]
+        self.db_port = Config.db_config["port"]
+        self.db_user = Config.db_config["user"]
+        self.db_password = Config.db_config["password"]
+        self.db_charset = Config.db_config["charset"]
 
         self.is_running = False
         
@@ -20,7 +20,7 @@ class ThreadsServer:
         """
         서버를 실행한다.
         """
-        self.socket = socket.socket(config.comm_config["socket_family"], config.comm_config["socket_type"])
+        self.socket = socket.socket(Config.comm_config["socket_family"], Config.comm_config["socket_type"])
         self.socket.bind((self.address, self.port))
 
         # 최대 5개까지 연결 대기
