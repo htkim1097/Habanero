@@ -1,8 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, font
 from PIL import ImageTk, Image
+import socket
 
-img_path = "ThreadsApp\Threads\images\\"
+img_path = "Threads\images\\"
 
 # 이미지 객체를 전역 변수로 선언해서 참조 유지
 bgImg = None
@@ -27,6 +28,18 @@ def on_entry_click(entry, string):
 def on_focusout(entry, string):
     if entry.get() == "":
         entry.insert(0, string)
+
+def encode_db(data):
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(("192.168.0.69", 9999))
+
+    try:
+        while True:
+            client_socket.send(data.encode())
+            return client_socket.recv(1024)
+    finally:
+        client_socket.close()
+
 
 # 로그인 화면 실행
 class LoginPage(tk.Frame):
