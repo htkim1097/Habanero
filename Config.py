@@ -6,6 +6,7 @@ comm_config = {
     "host" : "localhost",
     "port" : 8080,
     "baudrate" : 1024,
+    "charset" : "utf8",
 }
 
 db_config = {
@@ -15,4 +16,3 @@ db_config = {
     "password" : "0000",
     "charset" : "utf8",
 }
-

@@ -2,8 +2,9 @@ import Config
 import socket
 import threading
 import pymysql
-from Msg import message, MessageType
+from Msg import *
 import copy
+import datetime
 
 class ThreadsServer:
     def __init__(self):
@@ -64,6 +65,7 @@ class ThreadsServer:
                 repr_data = eval(en_data)
 
                 res = self.handle_data(repr_data)
+                print(f"[데이터 송신 {address}] - {res}")
 
                 client_socket.send(str(res).encode())
         except Exception as e:
@@ -76,11 +78,17 @@ class ThreadsServer:
 
         try:
             if d_type == MessageType.LOGIN:
-                self.handle_login(data)
+                return self.handle_login(data)
             elif d_type == MessageType.REGISTER:
-                self.handle_register(data)
+                return self.handle_register(data)
+            elif d_type == MessageType.POST:
+                return self.handle_post(data)
+            elif d_type == MessageType.GET_FEED:
+                return self.handle_get_feed(data)
+            elif d_type == MessageType.GET_NOTIFICATIONS:
+                return self.handel_get_notifi(data)
             else:
-                raise Exception("data type 오류: 클라이언트로부터 받은 데이터의 type 값에 오류가 있습니다.")
+                raise Exception("[오류:handle_data] - 클라이언트로부터 받은 데이터의 type 값에 오류가 있습니다.")
             
         except Exception as e:
             print(f"[오류:handle_data] - {e}")
@@ -89,40 +97,83 @@ class ThreadsServer:
         """
         로그인 정보를 확인하여 
         """
-        return self.send_query(f"SELECT * FROM user WHERE user_id = '{data["id"]}' AND password = '{data["password"]}';")
+        res = self.send_query(f"SELECT * FROM user WHERE user_id = '{data["id"]}' AND password = '{data["password"]}';")
+         
+        if (len(res) > 0):
+            return Message.create_login_res_msg(MessageStatusType.SUCCESS)
+        else:
+            return Message.create_login_res_msg(MessageStatusType.FAILED)
 
     def handle_register(self, data):
         """
         회원가입에서 입력한 값들로 user 테이블에 데이터를 추가한다. 
         """
-        return self.send_query(f"INSERT INTO user VALUES ('{data["id"]}', '{data["email"]}', '{data["password"]}', '{data["name"]}', '{data["profile_image"]}');")
+        try:
+            if (len(self.send_query(f"select * from user where user_id = '{data["id"]}';")) > 0):
+                return Message.create_register_res_msg( MessageStatusType.FAILED, "입력한 아이디가 이미 있습니다.")
+            else:
+                self.send_query(f"INSERT INTO user VALUES ('{data["id"]}', '{data["email"]}', '{data["password"]}', '{data["name"]}', '{data["profile_image"]}');")
+                res = self.send_query(f"select * from user where user_id = '{data["id"]}';")
+
+                if (len(res) > 0):
+                    return Message.create_register_res_msg(MessageStatusType.SUCCESS)
+                else:
+                    return Message.create_register_res_msg(MessageStatusType.FAILED, "조회 실패")
+                
+        except Exception as e:
+            print(f"[오류:handle_register] - {e}")
+            return Message.create_register_res_msg(MessageStatusType.FAILED, message=e)
+
+    def handle_post(self, data):
+        try:
+            if data['parent_id'] is None:
+                res = self.send_query(f"INSERT INTO post VALUES (null, '{data["content"]}', '{data["location"]}', '{data["id"]}', '{data["post_time"]}', null);")            
+            else:
+                res = self.send_query(f"INSERT INTO post VALUES (null, '{data["content"]}', '{data["location"]}', '{data["id"]}', '{data["post_time"]}', '{data["parent_id"]}');")
+            return Message.create_post_res_msg(status=MessageStatusType.SUCCESS)
+        except Exception as e:
+            print(f"[오류:handle_post] - {e}")
+            return Message.create_post_res_msg(status=MessageStatusType.FAILED, message=e)
+
+    def handle_get_feed(self, data):
+        try:
+            res = self.send_query(f"select * from post")
+            return Message.create_get_feed_res_msg(status=MessageStatusType.SUCCESS, posts=res)
+        except Exception as e:
+            print(f"[오류:handle_get_feed]- {e}")
+            return Message.create_get_feed_res_msg(status=MessageStatusType.FAILED, message=e)
+    
+    def handel_get_notifi(self, data):
+        try:
+            res = self.send_query(f"select * from notification where user_id = '{data["id"]}'")
+            return Message.create_notif_res_msg(status=MessageStatusType.SUCCESS, notifications=res)
+        except Exception as e:
+            print(f"[오류:handel_get_notifi]- {e}")
+            return Message.create_notif_res_msg(status=MessageStatusType.FAILED, message=e)
 
     def send_query(self, query):
         """
         DB에 연결하여 쿼리를 전송하고, 결과값을 수신한다.
         """
-        try:
-            conn = pymysql.connect(
-                host = self.db_address,
-                port = self.db_port,
-                user = self.db_user,
-                password = self.db_password,
-                charset = self.db_charset,
-                autocommit=True,
-                database = "threads_db"
-            )
 
-            cur = conn.cursor()
-            cur.execute(query)
+        conn = pymysql.connect(
+            host = self.db_address,
+            port = self.db_port,
+            user = self.db_user,
+            password = self.db_password,
+            charset = self.db_charset,
+            autocommit=True,
+            database = "threads_db"
+        )
 
-            res = cur.fetchall()
-            conn.close()
+        cur = conn.cursor()
+        cur.execute(query)
 
-            print(f"[DB 결과] - {res}")
-            return res
-        except Exception as e:
-            print(f"[오류:send_query] - {e}")
-            return None
+        res = cur.fetchall()
+        conn.close()
+
+        print(f"[DB 결과] - {res}")
+        return res
         
     def stop_server(self):
         """
