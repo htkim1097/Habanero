@@ -292,20 +292,20 @@ class MyPage(tk.Frame):
         FrameTabs.pack(side="top", fill="x")
 
         self.mp1Img = ImageTk.PhotoImage(Image.open(img_path+'mp1.png'))
-        mp1Btn = tk.Button(FrameTabs, image=self.mp1Img, bd=0, relief="flat", highlightthickness=0, activebackground="black", command=lambda: self.switch_tabs("Threads"))
-        mp1Btn.place(x=20, y=0)
+        self.mp1Btn = tk.Button(FrameTabs, image=self.mp1Img, bd=0, relief="flat", highlightthickness=0, activebackground="black", command=lambda: self.switch_tabs("Threads"))
+        self.mp1Btn.place(x=20, y=0)
 
         self.mp2Img = ImageTk.PhotoImage(Image.open(img_path+'mp2.png'))
-        mp2Btn = tk.Button(FrameTabs,image=self.mp2Img, bd=0, relief="flat", highlightthickness=0, activebackground="black", command=lambda: self.switch_tabs("Replies"))
-        mp2Btn.place(x=140, y=0)
+        self.mp2Btn = tk.Button(FrameTabs,image=self.mp2Img, bd=0, relief="flat", highlightthickness=0, activebackground="black", command=lambda: self.switch_tabs("Replies"))
+        self.mp2Btn.place(x=140, y=0)
 
         self.mp3Img = ImageTk.PhotoImage(Image.open(img_path+'mp3.png'))
-        mp3Btn = tk.Button(FrameTabs, image=self.mp3Img, bd=0, relief="flat", highlightthickness=0, activebackground="black", command=lambda: self.switch_tabs("Media"))
-        mp3Btn.place(x=240, y=0)
+        self.mp3Btn = tk.Button(FrameTabs, image=self.mp3Img, bd=0, relief="flat", highlightthickness=0, activebackground="black", command=lambda: self.switch_tabs("Media"))
+        self.mp3Btn.place(x=240, y=0)
 
         self.mp4Img = ImageTk.PhotoImage(Image.open(img_path+'mp4.png'))
-        mp4Btn = tk.Button(FrameTabs, image=self.mp4Img, bd=0,  relief="flat", highlightthickness=0, activebackground="black", command=lambda: self.switch_tabs("Reposts"))
-        mp4Btn.place(x=340, y=0)
+        self.mp4Btn = tk.Button(FrameTabs, image=self.mp4Img, bd=0,  relief="flat", highlightthickness=0, activebackground="black", command=lambda: self.switch_tabs("Reposts"))
+        self.mp4Btn.place(x=340, y=0)
 
         lineFrame = tk.Frame(FrameTabs, bg="#666768")
         lineFrame.pack(fill="x",pady=(50,0))
@@ -315,23 +315,23 @@ class MyPage(tk.Frame):
         self.FrameContent.pack(side="top", fill="x")
 
 
-    def edit_name(self):
-        self.name_label.place.forget()
-        self.edit_nameImg.place.forget()
-
-        self.name_entry = tk.Entry(self.FrameTop, font=("Arial", 22, 'bold'))
-        self.name.insert(0, self.name_entry.get())
-        self.name_entry.place(x=30, y=140)
-
-        #이름 변경 확인 버튼
-        self.confirm_nameBtn = tk.Button(self.FrameTop, text="확인", command=self.save_name)
-        self.confirm_nameBtn.place(x=200, y=140)
-
-    def save_name(self):
-        new_name = self.name_entry.get()
-        self.name_text = new_name
-        self.name_label.place(x=30, y=140)
-        self.edit_nameBtn.place(x=95, y=160)
+    # def edit_name(self):
+    #     self.name_label.place.forget()
+    #     self.edit_nameImg.place.forget()
+    #
+    #     self.name_entry = tk.Entry(self.FrameTop, font=("Arial", 22, 'bold'))
+    #     self.name.insert(0, self.name_entry.get())
+    #     self.name_entry.place(x=30, y=140)
+    #
+    #     #이름 변경 확인 버튼
+    #     self.confirm_nameBtn = tk.Button(self.FrameTop, text="확인", command=self.save_name)
+    #     self.confirm_nameBtn.place(x=200, y=140)
+    #
+    # def save_name(self):
+    #     new_name = self.name_entry.get()
+    #     self.name_text = new_name
+    #     self.name_label.place(x=30, y=140)
+    #     self.edit_nameBtn.place(x=95, y=160)
 
 
         # 게시글 없을 시 프레임에 나타나는 메시지
