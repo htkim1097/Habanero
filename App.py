@@ -581,7 +581,7 @@ class MsgFriendsPage(tk.Frame):
 
     def on_mousewheel_event(self, event):
         self.canvas.yview_scroll(int((event.delta / 120)), "units")
-        
+
 # ==== 실행 ====
 if __name__ == "__main__":
     app = App()

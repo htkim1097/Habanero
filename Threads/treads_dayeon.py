@@ -4,8 +4,11 @@ import tkinter as tk
 from tkinter import font
 from PIL import ImageTk, Image
 from datetime import datetime
+from os import path
 
-img_path = "../images/"
+# img_path = "../images/"
+
+img_path = path.dirname(path.abspath(__file__)) + "\\images\\"
 
 
 # 테스트용 ===============================
@@ -72,8 +75,55 @@ class App(tk.Tk):
         #self.show_frame("SidebarPage")
         self.show_frame("Following_FeedPage")
         #self.show_frame("PostFeed")
+        
+        # 메뉴 버튼의 이미지
+        # TODO 활성화 버튼 추가 필요
+        self.menu_home_img = ImageTk.PhotoImage(Image.open(img_path + 'home1.png'))
+        self.w_menu_home_img = ImageTk.PhotoImage(Image.open(img_path + 'home2-1.png'))
+        self.menu_msg_img = ImageTk.PhotoImage(Image.open(img_path + 'home2.png'))
+        self.w_menu_msg_img = ImageTk.PhotoImage(Image.open(img_path + 'home2-1.png'))
+        self.menu_new_img = ImageTk.PhotoImage(Image.open(img_path + 'home3.png'))
+        self.w_menu_new_img = ImageTk.PhotoImage(Image.open(img_path + 'home2-1.png'))
+        self.menu_act_img = ImageTk.PhotoImage(Image.open(img_path + 'home4.png'))
+        self.w_menu_act_img = ImageTk.PhotoImage(Image.open(img_path + 'home2-1.png'))
+        self.menu_my_img = ImageTk.PhotoImage(Image.open(img_path + 'home5.png'))
+        self.w_menu_my_img = ImageTk.PhotoImage(Image.open(img_path + 'home2-1.png'))
 
+    def place_menu_bar(self, place_to, active_menu:int):
+        """
+        홈 맨 아래 아이콘들을 배치한다.
+        """
+        home_img = self.menu_home_img
+        msg_img = self.menu_msg_img
+        new_img = self.menu_new_img
+        act_img = self.menu_act_img
+        my_img = self.menu_act_img
 
+        if active_menu == 0:
+            home_img = self.w_menu_home_img
+        elif active_menu == 1:
+            msg_img = self.w_menu_home_img
+        elif active_menu == 2:
+            new_img = self.w_menu_home_img
+        elif active_menu == 3:
+            act_img = self.w_menu_home_img
+        elif active_menu == 4:
+            my_img = self.w_menu_home_img
+
+        home1Btn = tk.Button(place_to, image=home_img, bd=0, background="black", activebackground="black", relief="flat", highlightthickness=0, command=lambda: self.on_click_home_btn())
+        home1Btn.place(x=5, y=860)
+
+        home2Btn = tk.Button(place_to, image=msg_img, bd=0, background="black", activebackground="black", relief="flat", highlightthickness=0, command=lambda: self.on_click_msg_btn())
+        home2Btn.place(x=95, y=860)
+
+        home3Btn = tk.Button(place_to, image=new_img, bd=0, background="black", activebackground="black", relief="flat", highlightthickness=0, command=lambda: self.on_click_new_btn())
+        home3Btn.place(x=185, y=860)
+
+        home4Btn = tk.Button(place_to, image=act_img, bd=0, background="black", activebackground="black", relief="flat", highlightthickness=0, command=lambda: self.on_click_act_btn())
+        home4Btn.place(x=275, y=860)
+
+        home5Btn = tk.Button(place_to, image=my_img, bd=0, background="black", activebackground="black", relief="flat", highlightthickness=0, command=lambda: self.on_click_my_btn())
+        home5Btn.place(x=365, y=860)
 
     def show_frame(self, page_name):
         frame = self.frames[page_name]
