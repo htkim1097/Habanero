@@ -27,7 +27,7 @@ def test():
     register_res = eval(client.recv(comm_config["baudrate"]).decode())
     #print(f"[데이터 수신] - {recv_data}")
 
-    if register_res is not None and register_res["type"] == MessageType.REGISTER and register_res["status"] == MessageStatusType.SUCCESS:
+    if register_res is not None and register_res["type"] == EnumMessageType.REGISTER and register_res["status"] == EnumMsgStatus.SUCCESS:
         print("[회원가입 테스트] - 회원가입 성공")
     else:
         print(f"[회원가입 테스트] - 회원가입 실패 : {register_res['message']}")
@@ -41,7 +41,7 @@ def test():
     login_res = eval(client.recv(comm_config["baudrate"]).decode())
     #print(f"[데이터 수신] - {recv_data}")
 
-    if login_res is not None and login_res["type"] == MessageType.LOGIN and login_res["status"] == MessageStatusType.SUCCESS:
+    if login_res is not None and login_res["type"] == EnumMessageType.LOGIN and login_res["status"] == EnumMsgStatus.SUCCESS:
         print("[로그인 테스트] - 로그인 성공")
     else:
         print(f"[로그인 테스트] - 로그인 실패 : {login_res['message']}")
@@ -57,7 +57,7 @@ def test():
     post_res = eval(client.recv(comm_config["baudrate"]).decode())
     #print(f"[데이터 수신] - {recv_data}")
 
-    if post_res is not None and post_res["type"] == MessageType.POST and post_res["status"] == MessageStatusType.SUCCESS:
+    if post_res is not None and post_res["type"] == EnumMessageType.POST and post_res["status"] == EnumMsgStatus.SUCCESS:
         print("[Post 테스트] - 게시글 작성 성공")
     else:
         print(f"[Post 테스트] - 게시글 작성 실패 : {post_res['message']}")
@@ -71,7 +71,7 @@ def test():
     feed_res = eval(client.recv(comm_config["baudrate"]).decode())
     #print(f"[데이터 수신] - {recv_data}")
 
-    if feed_res is not None and feed_res["type"] == MessageType.GET_FEED and feed_res["status"] == MessageStatusType.SUCCESS:
+    if feed_res is not None and feed_res["type"] == EnumMessageType.GET_FEED and feed_res["status"] == EnumMsgStatus.SUCCESS:
         print(f"[Feed 테스트] - 피드 조회 성공: {len(feed_res["posts"])} 개의 게시물 조회 됨.")
         if feed_res["posts"]:
             print(feed_res["posts"][0])
@@ -87,7 +87,7 @@ def test():
     notif_res = eval(client.recv(comm_config["baudrate"]).decode())
     #print(f"[데이터 수신] - {recv_data}")
 
-    if notif_res is not None and notif_res["type"] == MessageType.GET_NOTIFICATIONS and notif_res["status"] == MessageStatusType.SUCCESS:
+    if notif_res is not None and notif_res["type"] == EnumMessageType.GET_NOTIFICATIONS and notif_res["status"] == EnumMsgStatus.SUCCESS:
         print(f"[알림 테스트] - 알림 조회 성공: {len(notif_res["notifications"])} 개의 알림.")
     else:
         print(f"[알림 테스트] - 알림 조회 실패 : {notif_res['message']}")

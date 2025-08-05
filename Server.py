@@ -3,7 +3,6 @@ import socket
 import threading
 import pymysql
 from Msg import *
-import copy
 import datetime
 
 class ThreadsServer:
@@ -50,7 +49,7 @@ class ThreadsServer:
         """
         클라이언트 연결 관련
         """
-        print(f"[클라이언트 연결] - {address}")
+        print(f"\n[클라이언트 연결] - {address}")
 
         try:
             while True:
@@ -73,83 +72,202 @@ class ThreadsServer:
         finally:
             client_socket.close()
 
-    def handle_data(self, data):
-        d_type = int(data["type"])
+    def handle_data(self, msg):
+        """
+        클라이언트로 부터 받은 메시지의 유형에 따라 처리 메서드를 실행한다.
+        """
+        msg_type = int(msg["type"])
 
         try:
-            if d_type == MessageType.LOGIN:
-                return self.handle_login(data)
-            elif d_type == MessageType.REGISTER:
-                return self.handle_register(data)
-            elif d_type == MessageType.POST:
-                return self.handle_post(data)
-            elif d_type == MessageType.GET_FEED:
-                return self.handle_get_feed(data)
-            elif d_type == MessageType.GET_NOTIFICATIONS:
-                return self.handel_get_notifi(data)
+            if msg_type == EnumMessageType.LOGIN:
+                return self.handle_login(msg)
+            elif msg_type == EnumMessageType.REGISTER:
+                return self.handle_register(msg)
+            elif msg_type == EnumMessageType.POST:
+                return self.handle_post(msg)
+            elif msg_type == EnumMessageType.GET_FEED:
+                return self.handle_get_feed(msg)
+            elif msg_type == EnumMessageType.GET_NOTIFICATIONS:
+                return self.handle_get_notifi(msg)
+            elif msg_type == EnumMessageType.GET_FOLLOWS:
+                return self.handle_get_follows(msg)
+            elif msg_type == EnumMessageType.GET_USER_INFO:
+                return self.handle_get_userinfo(msg)
             else:
                 raise Exception("[오류:handle_data] - 클라이언트로부터 받은 데이터의 type 값에 오류가 있습니다.")
             
         except Exception as e:
             print(f"[오류:handle_data] - {e}")
 
-    def handle_login(self, data):
+    def handle_login(self, msg):
         """
-        로그인 정보를 확인하여 
+        로그인 정보를 확인하여 결과를 전달한다.
         """
-        res = self.send_query(f"SELECT * FROM user WHERE user_id = '{data["id"]}' AND password = '{data["password"]}';")
+        m_type = EnumMessageType.LOGIN
+
+        res = self.send_query(f"SELECT * FROM user WHERE user_id = '{msg["id"]}' AND password = '{msg["password"]}';")
          
         if (len(res) > 0):
-            return Message.create_login_res_msg(MessageStatusType.SUCCESS)
+            return Message.create_response_msg(
+                type=m_type, 
+                status=EnumMsgStatus.SUCCESS
+                )
         else:
-            return Message.create_login_res_msg(MessageStatusType.FAILED)
+            return Message.create_response_msg(
+                type=m_type, 
+                status=EnumMsgStatus.FAILED, 
+                message="로그인 정보 없음"
+                )
 
-    def handle_register(self, data):
+    def handle_register(self, msg):
         """
         회원가입에서 입력한 값들로 user 테이블에 데이터를 추가한다. 
         """
+        m_type = EnumMessageType.REGISTER
+
         try:
-            if (len(self.send_query(f"select * from user where user_id = '{data["id"]}';")) > 0):
-                return Message.create_register_res_msg( MessageStatusType.FAILED, "입력한 아이디가 이미 있습니다.")
+            if (len(self.send_query(f"select * from user where user_id = '{msg["id"]}';")) > 0):
+                return Message.create_response_msg(
+                    type=m_type, 
+                    status=EnumMsgStatus.FAILED, 
+                    message="입력한 아이디가 이미 있습니다."
+                    )
             else:
-                self.send_query(f"INSERT INTO user VALUES ('{data["id"]}', '{data["email"]}', '{data["password"]}', '{data["name"]}', '{data["profile_image"]}');")
-                res = self.send_query(f"select * from user where user_id = '{data["id"]}';")
+                self.send_query(f"INSERT INTO user VALUES ('{msg["id"]}', '{msg["email"]}', '{msg["password"]}', '{msg["name"]}', '{msg["profile_image"]}');")
+                res = self.send_query(f"select * from user where user_id = '{msg["id"]}';")
 
                 if (len(res) > 0):
-                    return Message.create_register_res_msg(MessageStatusType.SUCCESS)
+                    return Message.create_response_msg(
+                        type=m_type,
+                        status=EnumMsgStatus.SUCCESS,
+                        )
                 else:
-                    return Message.create_register_res_msg(MessageStatusType.FAILED, "조회 실패")
+                    return Message.create_response_msg(
+                        type=m_type,
+                        status=EnumMsgStatus.FAILED, 
+                        message="조회 실패"
+                        )
                 
         except Exception as e:
             print(f"[오류:handle_register] - {e}")
-            return Message.create_register_res_msg(MessageStatusType.FAILED, message=e)
+            return Message.create_response_msg(
+                typ=m_type,
+                status=EnumMsgStatus.FAILED, 
+                message=e
+                )
 
-    def handle_post(self, data):
+    def handle_post(self, msg):
+        """
+        게시글 작성 동작 후 결과를 전달한다.
+        """
+        m_type = EnumMessageType.POST
         try:
-            if data['parent_id'] is None:
-                res = self.send_query(f"INSERT INTO post VALUES (null, '{data["content"]}', '{data["location"]}', '{data["id"]}', '{data["post_time"]}', null);")            
+            # parent_id가 없으면 게시글
+            if msg['parent_id'] is None:
+                res = self.send_query(f"INSERT INTO post VALUES (null, '{msg["content"]}', '{msg["location"]}', '{msg["id"]}', '{msg["post_time"]}', null);")            
+            # parent_id가 있으면 댓글
             else:
-                res = self.send_query(f"INSERT INTO post VALUES (null, '{data["content"]}', '{data["location"]}', '{data["id"]}', '{data["post_time"]}', '{data["parent_id"]}');")
-            return Message.create_post_res_msg(status=MessageStatusType.SUCCESS)
+                res = self.send_query(f"INSERT INTO post VALUES (null, '{msg["content"]}', '{msg["location"]}', '{msg["id"]}', '{msg["post_time"]}', '{msg["parent_id"]}');")
+
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.SUCCESS
+                )
+        
         except Exception as e:
             print(f"[오류:handle_post] - {e}")
-            return Message.create_post_res_msg(status=MessageStatusType.FAILED, message=e)
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.FAILED, 
+                message=e
+                )
 
-    def handle_get_feed(self, data):
+    def handle_get_feed(self, msg):
+        """
+        피드 데이터를 전달한다.
+        """
+        m_type = EnumMessageType.GET_FEED
+        # 임시로 모든 피드를 불러오도록 함. 수정 필용.
         try:
             res = self.send_query(f"select * from post")
-            return Message.create_get_feed_res_msg(status=MessageStatusType.SUCCESS, posts=res)
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.SUCCESS, 
+                data=res
+                )
         except Exception as e:
             print(f"[오류:handle_get_feed]- {e}")
-            return Message.create_get_feed_res_msg(status=MessageStatusType.FAILED, message=e)
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.FAILED, 
+                message=e
+                )
     
-    def handel_get_notifi(self, data):
+    def handle_get_notifi(self, msg):
+        """
+        
+        """
+        m_type = EnumMessageType.GET_NOTIFICATIONS
         try:
-            res = self.send_query(f"select * from notification where user_id = '{data["id"]}'")
-            return Message.create_notif_res_msg(status=MessageStatusType.SUCCESS, notifications=res)
+            res = self.send_query(f"select * from notification where user_id = '{msg["id"]}'")
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.SUCCESS, 
+                data=res
+                )
         except Exception as e:
             print(f"[오류:handel_get_notifi]- {e}")
-            return Message.create_notif_res_msg(status=MessageStatusType.FAILED, message=e)
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.FAILED, 
+                message=e
+                )
+        
+    def handle_get_follows(self, msg):
+        """
+        친구 목록 요청
+        - msg: create_get_follows_msg()로 생성된 메시지
+        """
+        m_type = EnumMessageType.GET_FOLLOWS
+        try:
+            res = self.send_query(f"select following_id from follow where follower_id = '{msg["id"]}'")
+            
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.SUCCESS, 
+                data=res
+                )
+        except Exception as e:
+            print(f"[오류:handle_get_follows]- {e}")
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.FAILED, 
+                message=e
+                )
+        
+    def handle_get_userinfo(self, msg):
+        """
+        유저 정보 반환  
+        - msg: create_get_userinfo_msg()로 생성된 메시지
+        """
+        m_type = EnumMessageType.GET_USER_INFO
+        try:
+            res = self.send_query(f"select * from user where user_id = '{msg["id"]}'")
+            data = MessageData.create_userinfo_data(res[0][0], res[0][3], res[0][1], res[0][4])
+
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.SUCCESS, 
+                data=data
+                )
+        
+        except Exception as e:
+            print(f"[오류:handle_get_userinfo]- {e}")
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.FAILED, 
+                message=e
+                )
 
     def send_query(self, query):
         """
@@ -167,6 +285,7 @@ class ThreadsServer:
         )
 
         cur = conn.cursor()
+        print(f"\n[쿼리]: {query}")
         cur.execute(query)
 
         res = cur.fetchall()
