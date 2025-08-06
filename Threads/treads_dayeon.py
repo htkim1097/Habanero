@@ -6,9 +6,9 @@ from PIL import ImageTk, Image
 from datetime import datetime
 from os import path
 
-# img_path = "../images/"
+img_path = "../images/"
 
-img_path = path.dirname(path.abspath(__file__)) + "\\..\\images\\"
+#img_path = path.dirname(path.abspath(__file__)) + "\\..\\images\\"
 
 
 # 테스트용 ===============================
