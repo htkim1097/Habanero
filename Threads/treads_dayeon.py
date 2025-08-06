@@ -6,9 +6,9 @@ from PIL import ImageTk, Image
 from datetime import datetime
 from os import path
 
-img_path = "../images/"
+# img_path = "../images/"
 
-#img_path = path.dirname(path.abspath(__file__)) + "\\images\\"
+img_path = path.dirname(path.abspath(__file__)) + "\\..\\images\\"
 
 
 # 테스트용 ===============================
@@ -24,22 +24,13 @@ class EnumMenuBar:
 def show():
     print("hello")
 
-class MessageType:
-    NONE = 0
-    REGISTER = 1
-    LOGIN = 2
-    POST = 3
-    GET_FEED =4
-    GET_NOTIFICATIONS = 5
-    LIKE_POST = 6
-
 messages = [
     {"id": "user1",
      "feed": "동해물과 백두산이 마르고 닳도록 하나님이 보우하사 우리나라 만세 무궁화 삼천리 화려강산 대한사람 대한으로 길이 보전하세",
      "comment_cnt": "17",
      "like_cnt": "5",
      "elapsed_time": "2025-08-04 15:40:33",
-     "img": "../images/mudo.jpg"},
+     "img": img_path + "/mudo.jpg"},
     {"id": "user2",
      "feed": "파이썬파이썬파이썬",
      "comment_cnt": "5",
@@ -51,13 +42,13 @@ messages = [
      "comment_cnt": "17",
      "like_cnt": "5",
      "elapsed_time": "2025-08-04 15:40:33",
-     "img": "../images/mudo.jpg"},
+     "img": img_path + "/mudo.jpg"},
     {"id": "user1",
      "feed": "동해물과 백두산이 마르고 닳도록 하나님이 보우하사 우리나라 만세 무궁화 삼천리 화려강산 대한사람 대한으로 길이 보전하세",
      "comment_cnt": "17",
      "like_cnt": "5",
      "elapsed_time": "2025-08-04 15:40:33",
-     "img": "../images/mudo.jpg"},
+     "img": img_path + "/mudo.jpg"},
 ]
 
 # =======================================
@@ -140,7 +131,7 @@ class App(tk.Tk):
         home4Btn = tk.Button(place_to, image=act_img, bd=0, background="black", activebackground="black", relief="flat", highlightthickness=0, command=lambda: self.on_click_act_btn())
         home4Btn.place(x=275, y=860)
 
-        home5Btn = tk.Button(place_to, image=my_img, bd=0, background="black", activebackground="black", relief="flat", highlightthickness=0, command=lambda: self.on_click_act_btn())
+        home5Btn = tk.Button(place_to, image=my_img, bd=0, background="black", activebackground="black", relief="flat", highlightthickness=0, command=lambda: self.on_click_my_btn())
         home5Btn.place(x=365, y=860)
 
     def add_frame(self, Frame, parent=None):
@@ -398,7 +389,7 @@ class MyPage(tk.Frame):
         Message = {
             "id": "_oserra",
             "name": "세라",
-            "profile_img":"../images/명수.png",
+            "profile_img": img_path + "/명수.png",
             "followers": 41,
             "bio": "집에 가고 싶어요"
         }
