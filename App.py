@@ -1,9 +1,9 @@
 import tkinter as tk
-from tkinter import ttk, font
+from tkinter import ttk, font, filedialog
 from PIL import ImageTk, Image, ImageDraw
 from os import path
 import socket
-from Msg import Message, EnumMessageType
+from Msg import *
 import Config
 from copy import deepcopy
 from datetime import datetime
@@ -83,7 +83,7 @@ class App(tk.Tk):
         self.w_menu_my_img = ImageTk.PhotoImage(Image.open(img_path + 'home5-2.png'))
 
         # 임의로 넣은 아이디. 나중에 ""으로
-        self.__user_id = "ht"  # 유저 아이디
+        self.__user_id = ""  # 유저 아이디
 
         self.frames = {}
 
@@ -97,9 +97,10 @@ class App(tk.Tk):
         self.add_frame(firstPage, self)
         self.add_frame(SidebarPage, self)
         self.add_frame(Following_FeedPage, self)
+        self.add_frame(ChatRoomPage, self)
 
         # 첫 화면
-        self.show_frame(LoginPage)
+        self.show_frame(MsgFriendsPage)
 
     def add_frame(self, Frame, parent=None):
         """
@@ -256,7 +257,10 @@ class App(tk.Tk):
         self.__user_id = user_id
 
     def get_user_id(self):
-        return self.__user_id
+        if self.__user_id == "":
+            return "ht"
+        else:
+            return self.__user_id
     
 # 어플 실행 화면 - 시간 남으면..
 class firstPage(tk.Frame):
@@ -967,9 +971,11 @@ class MsgFriendsPage(tk.Frame):
         self.cancel_img = ImageTk.PhotoImage(Image.open(img_path + 'cancel.png'))
         self.new_message_text_img = ImageTk.PhotoImage(Image.open(img_path + 'newMessageText.png'))
         self.to_suggested_text_img = ImageTk.PhotoImage(Image.open(img_path + 'toSuggested.png'))
+        self.selected_friend = None
+        self.friends_list = []
 
         # 배경
-        self.configure(bg="black")
+        self.configure(bg="aqua")
 
         # cencel 버튼
         cencel_btn = tk.Button(self, image=self.cancel_img, bd=0, background="black", activebackground="black", highlightthickness=0, command=lambda: self.on_click_cancel())
@@ -1023,39 +1029,14 @@ class MsgFriendsPage(tk.Frame):
             friend_infos = self.controller.request_db(msg)
             data = friend_infos["data"]
 
-            frame = self.create_friend_item(self.scrollable_frame, data["id"], data["name"], data["profile_img"])
+            frame = self.create_friend_item(data["id"], data["name"], data["profile_img"])
+            self.friends_list.append(frame)
             self.bind_mousewheel_recursive(frame)
 
-    def on_click(self, parent, frame):
-        for child in parent.winfo_children():
-            child.configure(bg="white")
-        frame.configure(bg="#e0f0ff")
-
-    def create_friend_item(self, parent, id, name, profile_img):
-        frame = tk.Frame(parent, bg="#1e1e1e", bd=0, relief="solid")
-
-        frame.bind("<Button-1>", lambda e: self.on_click(parent, frame))
-
-        try:
-            img = Image.open(profile_img).resize((40, 40))
-        except:
-            img = Image.new("RGB", (40, 40), color="gray")  # 이미지 불러오기 실패 시 회색 대체
-
-        croped_img = self.controller.crop_img_circle(img)
-        photo = ImageTk.PhotoImage(croped_img)
-        image_label = tk.Label(frame, image=photo, bg="#1e1e1e")
-        image_label.image = photo
-        image_label.pack(side="left", padx=10, pady=5)
-
-        text_frame = tk.Frame(frame, bg="#1e1e1e")
-        name_label = tk.Label(text_frame, text=id, fg="white", font=("Arial", 12, "bold"), anchor="w", bg="#1e1e1e", width=39)
-        status_label = tk.Label(text_frame, text=name, font=("Arial", 10), anchor="w", bg="#1e1e1e", fg="gray")
-
-        name_label.pack(anchor="w", expand=True)
-        status_label.pack(anchor="w")
-        text_frame.pack(side="left", fill="x", expand=True)
-
+    def create_friend_item(self, id, name, profile_img):
+        frame = FriendFrame(self, id, name, profile_img)
         frame.pack(fill="x", pady=2, padx=5)
+
         return frame
 
     def bind_mousewheel_recursive(self, widget):
@@ -1067,6 +1048,204 @@ class MsgFriendsPage(tk.Frame):
 
     def on_mousewheel_event(self, event):
         self.canvas.yview_scroll(int((event.delta / 120)), "units")
+
+    def on_click(self, frame):
+        print(self.selected_friend, "  ", frame.frame_id)
+
+        # 선택 안된 아이템을 클릭
+        if self.selected_friend != frame.frame_id:
+            self.selected_friend = frame.frame_id
+
+            for f in self.friends_list:
+                f.configure(highlightthickness=0)
+
+            frame.configure(highlightthickness=1)
+
+        # 선택된 아이템을 클릭
+        elif self.selected_friend == frame.frame_id:
+            self.selected_friend = None
+
+            frame.configure(highlightthickness=0)
+
+class FriendFrame(tk.Frame):
+    def __init__(self, parent, id, name, profile_img):
+        super().__init__(parent)
+        self.config(bg="#1e1e1e", relief="flat", highlightbackground="gray", highlightthickness=0)
+        self.frame_id = id
+
+        try:
+            img = Image.open(profile_img).resize((40, 40))
+        except:
+            img = Image.open(img_path + "noImageMan.png")  # 이미지 불러오기 실패 시 회색 대체
+
+        croped_img = parent.controller.crop_img_circle(img)
+        photo = ImageTk.PhotoImage(croped_img)
+        image_label = tk.Label(self, image=photo, bg="#1e1e1e")
+        image_label.image = photo
+        image_label.pack(side="left", padx=10, pady=5)
+
+        text_frame = tk.Frame(self, bg="#1e1e1e")
+        name_label = tk.Label(text_frame, text=id, fg="white", font=("Arial", 12, "bold"), anchor="w", bg="#1e1e1e", width=39)
+        status_label = tk.Label(text_frame, text=name, font=("Arial", 10), anchor="w", bg="#1e1e1e", fg="gray")
+
+        name_label.pack(anchor="w", expand=True)
+        status_label.pack(anchor="w")
+        text_frame.pack(side="left", fill="x", expand=True)
+
+        for child in self.winfo_children():
+            child.bind("<Button-1>", lambda e: parent.on_click(self))
+        self.bind("<Button-1>", lambda e: parent.on_click(self))
+
+
+# 채팅방
+class ChatRoomPage(tk.Frame):
+
+# 클라이언트에서 이미지 변환
+# image_path = "path/to/your/image.jpg"
+# image = Image.open(image_path)
+# image_bytes = io.BytesIO()
+# image.save(image_bytes, format='JPEG') # 또는 다른 포맷 (PNG, GIF 등)
+# image_bytes = image_bytes.getvalue()
+# image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+
+# 서버로 전송
+
+# 서버에서 받은 blob 데이터를 이미지로 변환
+# image_base64 = "..." # Base64 인코딩된 문자열
+# image_bytes = base64.b64decode(image_base64)
+# data_io = io.BytesIO(data[0][0])
+# img = Image.open(data_io)
+
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        self.parent = parent
+
+        self.friend_profile_img = ImageTk.PhotoImage(Image.open(img_path + 'messagesText.png'))
+        self.add_file_img = ImageTk.PhotoImage(Image.open(img_path + 'plus.png'))
+        self.message_bar_img = ImageTk.PhotoImage(Image.open(img_path + 'chatbar.png'))
+        self.back_img = ImageTk.PhotoImage(Image.open(img_path + 'back_black.png'))
+
+        self.msg_default_text = "Message..."
+
+        # 배경
+        self.configure(bg="black")
+
+        self.message_bar = tk.Label(self, image=self.message_bar_img, borderwidth=0)
+        self.message_bar.place(x=70, y=850)
+        self.message_bar_font = tk.font.Font(size=14)
+
+        self.message_bar_entry = tk.Entry(self, bd=0, fg="white", background="#1e1e1e", font=self.message_bar_font)
+        self.message_bar_entry.place(x=85, y=870, width=350)
+        self.message_bar_entry.insert(0, self.msg_default_text)
+        self.message_bar_entry.bind('<Button-1>', lambda e: self.controller.on_entry_click(self.message_bar_entry, self.msg_default_text))
+        self.message_bar_entry.bind('<FocusOut>', lambda e: self.controller.on_focusout(self.message_bar_entry, self.msg_default_text))
+        self.message_bar_entry.bind('<Return>', lambda e: self.send_text)
+
+        # 파일 추가 버튼
+        new_message_btn = tk.Button(self, image=self.add_file_img, activebackground="black", bd=0, background="black" ,relief="flat", highlightthickness=0, command=lambda: self.send_text())
+        new_message_btn.place(x=10, y=850)
+
+        # 이전 버튼
+        new_message_btn = tk.Button(self, image=self.back_img, activebackground="black", bd=0, background="black" ,relief="flat", highlightthickness=0, command=lambda: self.controller.show_frame(MsgFriendsPage))
+        new_message_btn.place(x=20, y=40)
+
+        # 메시지 리스트
+        self.list_frame = tk.Frame(self)
+        self.list_frame.place(x=0, y=100, width=self.controller.app_width, height=self.controller.contents_frame_height - 120)
+
+        self.canvas = tk.Canvas(self.list_frame, bg="green", highlightthickness=0)
+
+        self.scrollable_frame = tk.Frame(self.canvas, bg="black")
+        self.scrollable_frame.config(height=300)
+        self.canvas.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
+
+        # 캔버스에 스크롤 가능한 프레임 넣기
+        self.scrollable_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+
+        self.scrollable_frame.bind("<Configure>", self.on_configure)
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+
+
+    def on_configure(self, event):
+        """
+        스크롤바의 크기를 동적으로 맞추기 위한 설정.
+        """
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def show_frame(self):
+        self.tkraise() 
+        self.load_chat_data()   # 비동기 실행 필요
+
+    def load_chat_data(self):
+        msg = Message.create_get_chat_data(self.controller.get_user_id())
+        res = self.controller.request_db(msg)
+
+        if res["status"]:
+            for message in res["data"]:
+                frame = self.create_msg_frame(self.scrollable_frame, message["user_id"], message["content"], message["image"], message["message_time"])
+                self.bind_mousewheel_recursive(frame)
+        #pass
+
+    def send_text(self):
+        text = self.message_bar_entry.get()
+        MessageData.create_msg_data(self.controller.get_user_id(), )
+
+
+
+        Message.create_add_message
+        
+
+    def send_image(self):
+        img_path = filedialog.askopenfile()
+        img = Image.open(img_path)
+
+        # 채팅 입력 및 전송
+        # 서버로 채팅 전송
+        #
+    
+    def on_mousewheel_event(self, event):
+        self.canvas.yview_scroll(int((event.delta / 120)), "units")
+
+    def create_msg_frame(self, parent, user_id, content, image, message_time):
+        msg_frame = tk.Frame(parent, bg="gray", bd=1, relief="solid")
+
+        # 내 메시지일 때
+        if self.controller.get_user_id() == user_id:
+            # 오른쪽 위치
+            pass
+        else:
+            # 왼쪽 위치
+            pass
+
+        # 텍스트 메시지일 때
+        if image is None:
+            # content 
+            pass
+        else:
+            # image
+            pass
+
+        message_font = ("Arial", 10)
+        message_box = tk.Frame(msg_frame, bg="gray")
+        message_box.pack(side="left", padx=10, pady=5)
+
+        text_lable = tk.Label(msg_frame, text="qweqwe", font=message_font, fg="white")
+        img_label = tk.Label(msg_frame, font=message_font)
+
+        text_lable.pack(fill="both", expand=True)
+        img_label.pack(fill="both", expand=True)
+        msg_frame.pack(fill="x", pady=2, padx=5)
+        
+        return msg_frame
+
+    def bind_mousewheel_recursive(self, widget):
+        widget.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
+        widget.bind("<Leave>", lambda e: self.canvas.unbind_all("<MouseWheel>"))
+
+        for child in widget.winfo_children():
+            self.bind_mousewheel_recursive(child)
 
 # ==== 실행 ====
 if __name__ == "__main__":

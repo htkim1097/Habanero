@@ -14,6 +14,8 @@ class EnumMessageType:
     GET_POST_IMG = 9
     FOLLOWING = 10
     GET_USER_INFO = 11
+    GET_MSG_DATA = 12
+    ADD_MST_DATA = 13
 
 class EnumMsgStatus:
     """
@@ -140,6 +142,30 @@ class Message:
             "id" : id,
         }
     
+    @classmethod
+    def create_get_chat_data(cls, chatroom_id):
+        """
+        클라이언트 -> 서버  
+        to_user_id와 채팅한 메시지 데이터들을 받아온다.  
+        """
+        return {
+            "type" : EnumMessageType.GET_MSG_DATA,
+            "chatroom_id" : chatroom_id,
+        }
+    
+    @classmethod
+    def create_add_message(cls, chatroom_id, data):
+        """
+        클라이언트 -> 서버  
+        chatroom_id의 채팅방에서 입력된 data를 저장하도록 요청한다.  
+        """
+        return {
+            "type" : EnumMessageType.ADD_MST_DATA,
+            "chatroom_id" : chatroom_id,
+            "data" : data
+        }
+
+    
 class MessageData:
     """
     메시지 데이터를 생성하는 메서드의 집합 클래스
@@ -157,14 +183,14 @@ class MessageData:
         }
 
     @classmethod
-    def create_post_data(cls, id, content, profile_img, like_cnt, comment_cnt, writed_time):
+    def create_post_data(cls, id, content, like_cnt, comment_cnt, writed_time, image=None):
         """
         게시글 정보 데이터
         """
         return {
             "id" : id,
             "content" : content,
-            "profile_img" : profile_img,
+            "image" : image,
             "like_cnt" : like_cnt,
             "comment_cnt" : comment_cnt,
             "writed_time" : writed_time,
@@ -181,6 +207,19 @@ class MessageData:
             "from_user_id" : from_user_id,
             "content" : content,
         } 
+    
+    @classmethod
+    def create_msg_data(cls, user_id, chatroom_id, content, message_time, image=None):
+        """
+        채팅 메시지 데이터
+        """
+        return {
+            "user_id" : user_id,
+            "chatroom_id" : chatroom_id,
+            "content" : content,
+            "message_time" : message_time,
+            "image" : image,
+        }
     
 if __name__ == "__main__":
     msg = Message.create_login_msg("ht", "123qwe")
