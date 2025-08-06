@@ -104,6 +104,7 @@ class App(tk.Tk):
         self.add_frame(SidebarPage, self)
         self.add_frame(Following_FeedPage, self)
 
+
         # 첫 화면
         self.show_frame(LoginPage)
 
@@ -139,19 +140,21 @@ class App(tk.Tk):
         if entry.get() == "":
             entry.insert(0, string)
 
-    # def show_error_popup(self, controller):
-    #     """
-    #     오류 팝업을 띄운다.
-    #     """
-    #     login_frame = controller.frames["LoginPage"]
-    #     login_frame.error_frame.place(x=60, y=300)
+    def show_error_popup(self):
+        """
+        오류 팝업을 띄운다.
+        """
+        login_frame = self.frames["LoginPage"]
+        login_frame.error_frame.place(x=60, y=300)
 
-    # def show_complete_popup(self, controller):
-    #     """
-    #     완료 팝업을 띄운다.
-    #     """
-    #     join_frame = controller.frames["JoinPage"]
-    #     join_frame.complete_frame.place(x=60, y=300)
+        print(self.frames.keys())
+
+    def show_complete_popup(self):
+        """
+        완료 팝업을 띄운다.
+        """
+        join_frame = self.frames["JoinPage"]
+        join_frame.complete_frame.place(x=60, y=300)
 
     def show(self):
         """
@@ -258,7 +261,7 @@ class App(tk.Tk):
         self.show_frame(PostFeed)
 
     def on_click_act_btn(self):
-        pass
+        self.show_frame(ActivityPage)
 
     def on_click_my_btn(self):
         self.show_frame(MyPage)
@@ -333,20 +336,20 @@ class LoginPage(tk.Frame):
         self.error_frame.place(x=60, y=400)
         self.error_frame.place_forget()
 
-        errorImg = ImageTk.PhotoImage(Image.open(img_path + "error.png"))
-        frame = tk.Label(self.error_frame, image=errorImg, bg="white")
-        frame.image = errorImg
+        self.errorImg = ImageTk.PhotoImage(Image.open(img_path + "error.png"))
+        frame = tk.Label(self.error_frame, image=self.errorImg, bg="white")
+        frame.image = self.errorImg
         frame.pack()
 
-        closeImg = ImageTk.PhotoImage(Image.open(img_path + "close.png"))
-        closeBtn = tk.Button(self.error_frame, image=closeImg, bd=0, command=self.hide_error)
-        closeBtn.image = closeImg
-        closeBtn.place(x=300, y=15)
+        self.closeImg = ImageTk.PhotoImage(Image.open(img_path + "close.png"))
+        self.closeBtn = tk.Button(self.error_frame, image=self.closeImg, bd=0, command=self.hide_error)
+        self.closeBtn.image = self.closeImg
+        self.closeBtn.place(x=300, y=15)
 
-        checkImg = ImageTk.PhotoImage(Image.open(img_path + "check.png"))
-        checkBtn = tk.Button(self.error_frame, image=checkImg, bd=0, command=self.hide_error)
-        checkBtn.image = checkImg
-        checkBtn.place(x=280, y=130)
+        self.checkImg = ImageTk.PhotoImage(Image.open(img_path + "check.png"))
+        self.checkBtn = tk.Button(self.error_frame, image=self.checkImg, bd=0, command=self.hide_error)
+        self.checkBtn.image = self.checkImg
+        self.checkBtn.place(x=280, y=130)
 
     def show_frame(self):
         self.tkraise()
@@ -371,7 +374,7 @@ class LoginPage(tk.Frame):
             self.parent.show_frame(HomePage)
         # 로그인 실패
         else:
-            # self.parent.show_error_popup(self)
+            self.parent.show_error_popup()
             print("로그인 실패")
 
     def create_login_msg(self, id, password):
@@ -459,12 +462,52 @@ class JoinPage(tk.Frame):
         jloginBtn = tk.Button(self, image=self.jloginImg, bd=0, activebackground="white", command=self.controller.show)
         jloginBtn.place(x=68, y=850)
 
+        # 회원가입 완료 창
+        self.complete_frame = tk.Frame(self, width=350, height=180, bg="white")
+        self.complete_frame.place(x=60, y=400)
+        self.complete_frame.place_forget()
+
+        self.completeImg = ImageTk.PhotoImage(Image.open(img_path + "complete.png"))
+        frame = tk.Label(self.complete_frame, image=self.completeImg, bg="white")
+        frame.image = self.completeImg
+        frame.pack()
+
+        self.checkImg = ImageTk.PhotoImage(Image.open(img_path + "check.png"))
+        self.checkBtn = tk.Button(self.complete_frame, image=self.checkImg, bd=0, command=self.complete_frame.place_forget())
+        self.checkBtn.image = self.checkImg
+        self.checkBtn.place(x=300, y=15)
+
+    #회원 가입
+    # def process_join(self):
+    #     """
+    #     서버에 회원 가입을 요청한다.
+    #     """
+    #     # 회원가입 메시지 생성
+    #     user_id = self.idEntry.get()
+    #     user_pw = self.pwEntry.get()
+    #     user_email = self.emailEntry.get()
+    #     user_name = self.nameEntry.get()
+    #     #user_num = self.numEntry.get()
+    #
+    #     msg = self.create_login_msg(user_id, user_pw, user_email, user_name)
+    #
+    #     # 회원가입 요청
+    #     res = self.controller.request_db(msg)
+    #
+    #     # 회원가입 성공
+    #     if res["status"]:
+    #         self.controller.set_user_id(user_id)
+    #         self.parent.show_frame(LoginPage)
+    #     # 회원가입 실패
+    #     else:
+    #         self.parent.show_error_popup()
+    #         print("회원가입 실패")
+
+
     def show_frame(self):
         self.tkraise()
 
     # 홈 화면
-
-
 class HomePage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -540,16 +583,18 @@ class ActivityPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        self.parent = parent
-
         self.activitypageImg = ImageTk.PhotoImage(Image.open(img_path + 'activitypage.png'))
+
         label = tk.Label(self, image=self.activitypageImg)
-        label.place(x=-2, y=-2)
+        label.pack()
+
 
         controller.place_menu_bar(self, EnumMenuBar.ACTIVITY)
 
     def show_frame(self):
         self.tkraise()
+
+
 
 
 # 마이 페이지 화면
@@ -570,10 +615,6 @@ class MyPage(tk.Frame):
         #     "followers": 41,
         #     "bio": "집에 가고 싶어요"
         # }
-
-
-
-
         self.name_text = ""  # 이름 저장
 
         # 상단 프로필 프레임
@@ -587,15 +628,13 @@ class MyPage(tk.Frame):
         self.id_label = tk.Label(self.FrameTop, fg="white", bg="black", font=("Arial", 12))
         self.id_label.place(x=30, y=160)
 
-        self.follows_cnt_label = tk.Label(self.FrameTop, text=f"{Message['followers']}" + 'followers', fg="gray", bg="black",
+        self.follows_cnt_label = tk.Label(self.FrameTop, fg="gray", bg="black",
                                      font=("Arial", 11))
         self.follows_cnt_label.place(x=30, y=190)
 
-        # self.profile_img = ImageTk.PhotoImage(Image.open('profile_png').resize((65, 65)))
-        # self.profile_label = tk.Label(self.FrameTop, fg="white", bg="black")
-        # self.profile_label.place(x=380, y=70)  # 데이터 값 가져오기
-
-
+        self.profile_img = ImageTk.PhotoImage(Image.open(img_path + 'profile.png').resize((65, 65)))
+        self.profile_label = tk.Label(self.FrameTop, image=self.profile_img, fg="white", bg="black")
+        self.profile_label.place(x=380, y=70)  # 데이터 값 가져오기
 
 
         self.edit_pfImg = ImageTk.PhotoImage(Image.open(img_path +'edit_pf.png').resize((130, 30)))
@@ -723,12 +762,14 @@ class MyPage(tk.Frame):
         self.tkraise()
         self.update_user_info()
 
+
     def update_user_info(self):
         msg = Message.create_get_userinfo_msg(self.controller.get_user_id())
-
         res = self.controller.request_db(msg)
+
+        print('res1')
         print(res)
-        print(res['data']['name'])
+        # print(res['data']['name'])
 
         self.name_text = res['data']['name']
         self.name_label.config(text=self.name_text)
@@ -736,14 +777,18 @@ class MyPage(tk.Frame):
         self.id_text = res['data']['id']
         self.id_label.config(text=self.id_text)
 
-        self.profile_img_text = res['data']['profile_img']
-        self.profile_label.config(text=self.profile_img_text)
+        msg2 = Message.create_get_follows_msg(self.controller.get_user_id())
+        res2 = self.controller.request_db(msg2)
+        self.follows_cnt_label.config(text=str(len(res2['data']))+ ' followers')
 
+        # print(len(msg2))
+        print(len(res2['data']))
 
+        # print('res2')
+        # print(res2)
 
-
-
-
+        # self.profile_img_text = res['data']['profile_img']
+        # self.profile_label.config(text=self.profile_img_text)
 
 
 
