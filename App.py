@@ -6,7 +6,7 @@ import socket
 from Msg import *
 import Config
 from copy import deepcopy
-from datetime import datetime
+import datetime
 
 from Threads.threads_sera import ActivityPage
 
@@ -216,7 +216,19 @@ class App(tk.Tk):
                 client_socket.send(send_data)
                 print(f"[데이터 송신] - {send_data}")
 
-                recv_data = client_socket.recv(self.baudrate)
+                recv_data = b""
+                while True:
+                    chunk = client_socket.recv(self.baudrate)
+                    if not chunk:
+                        break
+                    
+                    recv_data += chunk
+
+                    # 대용량 데이터에 대비하기 위해 파일 끝을 확인하여 수신 받도록 수정 함.
+                    if b"<EOF>" in recv_data:
+                        recv_data = recv_data.split(b"<EOF>")[0]
+                        break
+
                 print(f"[데이터 수신] - {recv_data}\n")
 
                 return eval(recv_data.decode())
@@ -518,6 +530,17 @@ class HomePage(tk.Frame):
 
     def show_frame(self):
         self.tkraise()     
+        msg = Message.create_get_feed_msg(None)
+        res = self.controller.request_db(msg)
+
+        # 데이터 수신 예시
+        # { 'type': 4, 'status': 1, 'message': '', 'data': 
+        # {1: {'id': 'ht', 'content': '', 'image': None, 'like_cnt': '', 'comment_cnt': '', 'writed_time': datetime.datetime(2025, 8, 4, 12, 6, 3)}, 
+        #  2: {'id': 'ht', 'content': '', 'image': None, 'like_cnt': 1, 'comment_cnt': 1, 'writed_time': datetime.datetime(2025, 8, 4, 12, 14, 5)},
+        # }
+
+        print(res)
+
 
 # 마이 페이지 화면
 class MyPage(tk.Frame):
@@ -712,9 +735,6 @@ class MyPage(tk.Frame):
         # self.profile_img_text = res['data']['profile_img']
         # self.profile_label.config(text=self.profile_img_text)
 
-
-
-
 # following 피드 화면
 class Following_FeedPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -814,8 +834,8 @@ class FeedItemFrame(tk.Frame):
         idLabel.pack(side="left")
 
         # 시간 계산
-        post_time = datetime.strptime(message["elapsed_time"], "%Y-%m-%d %H:%M:%S")
-        now = datetime.now()
+        post_time = datetime.datetime.strptime(message["elapsed_time"], "%Y-%m-%d %H:%M:%S")
+        now = datetime.datetime.now()
         diff = now - post_time
         if diff.days >= 1:
             postTime = f"{diff.days} day ago"
@@ -875,7 +895,6 @@ class FeedItemFrame(tk.Frame):
     def show_frame(self):
         self.tkraise()  
 
-
 # Feeds 사이드바
 class SidebarPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -901,7 +920,6 @@ class SidebarPage(tk.Frame):
 
     def show_frame(self):
         self.tkraise()  
-
 
 # 게시물 작성 페이지
 class PostFeed(tk.Frame):
@@ -1011,7 +1029,6 @@ class PostFeed(tk.Frame):
         self.id_text = res['data']['id']
         self.idLabel.config(text=self.id_text)
 
-
 # 활동 내역 페이지
 class ActivityPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -1026,8 +1043,6 @@ class ActivityPage(tk.Frame):
 
     def show_frame(self):
         self.tkraise()
-
-
 
 # 메시지 페이지
 class MessagesPage(tk.Frame):
@@ -1091,14 +1106,15 @@ class MsgFriendsPage(tk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.parent = parent
-        self.cancel_img = ImageTk.PhotoImage(Image.open(img_path + 'cancel.png'))
-        self.new_message_text_img = ImageTk.PhotoImage(Image.open(img_path + 'newMessageText.png'))
-        self.to_suggested_text_img = ImageTk.PhotoImage(Image.open(img_path + 'toSuggested.png'))
         self.selected_friend = None
         self.friends_list = []
 
+        self.cancel_img = ImageTk.PhotoImage(Image.open(img_path + 'cancel.png'))
+        self.new_message_text_img = ImageTk.PhotoImage(Image.open(img_path + 'newMessageText.png'))
+        self.to_suggested_text_img = ImageTk.PhotoImage(Image.open(img_path + 'toSuggested.png'))
+
         # 배경
-        self.configure(bg="aqua")
+        self.configure(bg="black")
 
         # cencel 버튼
         cencel_btn = tk.Button(self, image=self.cancel_img, bd=0, background="black", activebackground="black", highlightthickness=0, command=lambda: self.on_click_cancel())
@@ -1157,7 +1173,7 @@ class MsgFriendsPage(tk.Frame):
             self.bind_mousewheel_recursive(frame)
 
     def create_friend_item(self, id, name, profile_img):
-        frame = FriendFrame(self, id, name, profile_img)
+        frame = FriendFrame(self.list_frame, id, name, profile_img)
         frame.pack(fill="x", pady=2, padx=5)
 
         return frame
@@ -1190,6 +1206,7 @@ class MsgFriendsPage(tk.Frame):
 
             frame.configure(highlightthickness=0)
 
+# 친구 목록 아이템
 class FriendFrame(tk.Frame):
     def __init__(self, parent, id, name, profile_img):
         super().__init__(parent)
@@ -1199,9 +1216,9 @@ class FriendFrame(tk.Frame):
         try:
             img = Image.open(profile_img).resize((40, 40))
         except:
-            img = Image.open(img_path + "noImageMan.png")  # 이미지 불러오기 실패 시 회색 대체
+            img = Image.open(img_path + "noImageMan.png")  # 이미지 불러오기 실패 시
 
-        croped_img = parent.controller.crop_img_circle(img)
+        croped_img = parent.master.controller.crop_img_circle(img)
         photo = ImageTk.PhotoImage(croped_img)
         image_label = tk.Label(self, image=photo, bg="#1e1e1e")
         image_label.image = photo
@@ -1218,7 +1235,6 @@ class FriendFrame(tk.Frame):
         for child in self.winfo_children():
             child.bind("<Button-1>", lambda e: parent.on_click(self))
         self.bind("<Button-1>", lambda e: parent.on_click(self))
-
 
 # 채팅방
 class ChatRoomPage(tk.Frame):
