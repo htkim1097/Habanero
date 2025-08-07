@@ -8,6 +8,8 @@ import Config
 from copy import deepcopy
 from datetime import datetime
 
+from Threads.threads_sera import ActivityPage
+
 # 영문 폰트 SF Pro text, 한글폰트 Apple SD Gothic Neo
 # threadsFont = tk.font.Font(family="Apple SD Gothic Neo", size=12, weight="bold", overstrike=False)
 
@@ -98,6 +100,10 @@ class App(tk.Tk):
         self.add_frame(SidebarPage, self)
         self.add_frame(Following_FeedPage, self)
         self.add_frame(ChatRoomPage, self)
+        self.add_frame(PostFeed, self)
+        self.add_frame(ActivityPage, self)
+
+
 
         # 첫 화면
         self.show_frame(MsgFriendsPage)
@@ -133,6 +139,19 @@ class App(tk.Tk):
         """
         if entry.get() == "":
             entry.insert(0, string)
+
+    # 텍스트 클릭 시 글씨 삭제
+    def on_Text_click(self, text, string):
+        # print(len(text.get("1.0", tk.END)))
+        # print(len(string))
+        # str1 = text.get("1.0", tk.END).replace(" ", "")
+        # str2 = string.replace(" ", "")
+        #
+        # if str1 == str2:
+        #     print("랄라")
+        #     text.delete("1.0", tk.END)
+        if string in text.get("1.0", tk.END):
+            text.delete("1.0", tk.END)
 
     # def show_error_popup(self, controller):
     #     """
@@ -245,10 +264,10 @@ class App(tk.Tk):
         self.show_frame(MessagesPage)
 
     def on_click_new_btn(self):
-        pass
+        self.show_frame(PostFeed)
 
     def on_click_act_btn(self):
-        pass
+        self.show_frame(ActivityPage)
 
     def on_click_my_btn(self):
         self.show_frame(MyPage)
@@ -500,110 +519,104 @@ class HomePage(tk.Frame):
     def show_frame(self):
         self.tkraise()     
 
-#마이 페이지 화면
+# 마이 페이지 화면
 class MyPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        self.current_tab = None #현재 선택된 탭
+        self.current_tab = None  # 현재 선택된 탭
 
         # 배경
         self.configure(bg="black")
 
-        #테스트용 데이터
-        Message = {
-            "id": "_oserra",
-            "name": "세라",
-            "profile_img": img_path + "/명수.png",
-            "followers": 41,
-            "bio": "집에 가고 싶어요"
-        }
-        self.name_text = Message['name'] #이름 저장
-
-        #홈 화면 기본 설정
-        # self.home = HomePage(self, controller)
-        # self.home.place(x=0, y=0, relwidth=1, relheight=1)
-
-        self.profile_img = ImageTk.PhotoImage(Image.open(Message['profile_img']).resize((60, 60)))
-
+        # 테스트용 데이터
+        # Message = {
+        #     "id": "_oserra",
+        #     "name": "세라",
+        #     "profile_img": img_path + "/명수.png",
+        #     "followers": 41,
+        #     "bio": "집에 가고 싶어요"
+        # }
+        self.name_text = ""  # 이름 저장
 
         # 상단 프로필 프레임
-        FrameTop = tk.Frame(self, bg="black", height=240)
-        FrameTop.pack(side="top", fill="x")
+        self.FrameTop = tk.Frame(self, bg="black", height=240)
+        self.FrameTop.pack(side="top", fill="x")
 
-        name_label = tk.Label(FrameTop, text=f"{Message['name']}", fg="white", bg="black", font=("Arial", 22, 'bold') )
-        name_label.place(x=30, y=140)
-
-        self.edit_nameImg = ImageTk.PhotoImage(Image.open(img_path+'edit_name.png').resize((13, 13)))
-        edit_nameBtn = tk.Button(FrameTop, image=self.edit_nameImg, bd=0,background="black", relief="flat", highlightthickness=0, activebackground="black", command=self.controller.show)
-        edit_nameBtn.place(x=95, y=160)
-
-        self.id_label = tk.Label(FrameTop, text=f"{Message['id']}", fg="white", bg="black", font=("Arial", 12) )
-        self.id_label.place(x=30, y=180)
-
-        follows_cnt_label = tk.Label(FrameTop, text=f"{Message['followers']}" + 'followers', fg="gray", bg="black", font=("Arial", 11))
-        follows_cnt_label.place(x=30, y=215)
-
-        profile_label = tk.Label(FrameTop,image = self.profile_img, fg="white", bg="black")
-        profile_label.place(x=380, y=110) #데이터 값 가져오기
-
-        self.edit_profileImg = ImageTk.PhotoImage(Image.open(img_path+'edit_profile.png').resize((20, 20)))
-        edit_profileBtn = tk.Button(FrameTop, image=self.edit_profileImg, bd=0,background="black", relief="flat", highlightthickness=0, activebackground="black", command=self.controller.show)
-        edit_profileBtn.place(x=442, y=155) #임시 위치 # 파일 선택 창 띄우기
+        self.name_label = tk.Label(self.FrameTop, fg="white", bg="black", font=("Arial", 22, 'bold'))
+        self.name_label.place(x=30, y=120)
 
 
-        self.homeRightImg = ImageTk.PhotoImage(Image.open(img_path+'homeRight2.png'))
-        homeRightBtn = tk.Button(FrameTop, image=self.homeRightImg, bd=0, background="black", relief="flat", highlightthickness=0, activebackground="black", command=self.controller.show)
-        homeRightBtn.place(x=400, y=28)
+        self.id_label = tk.Label(self.FrameTop, fg="white", bg="black", font=("Arial", 12))
+        self.id_label.place(x=30, y=160)
+
+        self.follows_cnt_label = tk.Label(self.FrameTop, fg="gray", bg="black",
+                                     font=("Arial", 11))
+        self.follows_cnt_label.place(x=30, y=190)
+
+        self.profile_img = ImageTk.PhotoImage(Image.open(img_path + 'profile.png').resize((65, 65)))
+        self.profile_label = tk.Label(self.FrameTop, image=self.profile_img, fg="white", bg="black")
+        self.profile_label.place(x=380, y=70)  # 데이터 값 가져오기
 
 
+        self.edit_pfImg = ImageTk.PhotoImage(Image.open(img_path +'edit_pf.png').resize((130, 30)))
+        self.edit_pfBtn = tk.Button(self, image=self.edit_pfImg, bd=0, relief="flat", highlightthickness=0,
+                               activebackground="black", command=controller.show)
+        self.edit_pfBtn.place(x=320, y=200)
 
-        #탭 프레임(버튼 배치)
-        FrameTabs = tk.Frame(self, bg="black", height=50)
-        FrameTabs.pack(side="top", fill="x")
+        self.homeRight2Img = ImageTk.PhotoImage(Image.open(img_path + 'homeRight2.png').resize((30, 30)))
+        self.homeRight2Btn = tk.Button(self.FrameTop, image=self.homeRight2Img, bd=0, background="black", relief="flat",
+                                 highlightthickness=0, activebackground="black", command=self.controller.show)
+        self.homeRight2Btn.place(x=420, y=15)
 
-        self.mp1Img = ImageTk.PhotoImage(Image.open(img_path+'mp1.png'))
-        self.mp1Btn = tk.Button(FrameTabs, image=self.mp1Img, bd=0, relief="flat", highlightthickness=0, activebackground="black", command=lambda: self.switch_tabs("Threads"))
+        # 탭 프레임(버튼 배치)
+        self.FrameTabs = tk.Frame(self, bg="black", height=50)
+        self.FrameTabs.pack(side="top", fill="x")
+
+        self.mp1Img = ImageTk.PhotoImage(Image.open(img_path + 'mp1.png'))
+        self.mp1Btn = tk.Button(self.FrameTabs, image=self.mp1Img, bd=0, relief="flat", highlightthickness=0,
+                                activebackground="black", command=lambda: self.switch_tabs("Threads"))
         self.mp1Btn.place(x=20, y=0)
 
-        self.mp2Img = ImageTk.PhotoImage(Image.open(img_path+'mp2.png'))
-        self.mp2Btn = tk.Button(FrameTabs,image=self.mp2Img, bd=0, relief="flat", highlightthickness=0, activebackground="black", command=lambda: self.switch_tabs("Replies"))
+        self.mp2Img = ImageTk.PhotoImage(Image.open(img_path + 'mp2.png'))
+        self.mp2Btn = tk.Button(self.FrameTabs, image=self.mp2Img, bd=0, relief="flat", highlightthickness=0,
+                                activebackground="black", command=lambda: self.switch_tabs("Replies"))
         self.mp2Btn.place(x=140, y=0)
 
-        self.mp3Img = ImageTk.PhotoImage(Image.open(img_path+'mp3.png'))
-        self.mp3Btn = tk.Button(FrameTabs, image=self.mp3Img, bd=0, relief="flat", highlightthickness=0, activebackground="black", command=lambda: self.switch_tabs("Media"))
+        self.mp3Img = ImageTk.PhotoImage(Image.open(img_path + 'mp3.png'))
+        self.mp3Btn = tk.Button(self.FrameTabs, image=self.mp3Img, bd=0, relief="flat", highlightthickness=0,
+                                activebackground="black", command=lambda: self.switch_tabs("Media"))
         self.mp3Btn.place(x=240, y=0)
 
-        self.mp4Img = ImageTk.PhotoImage(Image.open(img_path+'mp4.png'))
-        self.mp4Btn = tk.Button(FrameTabs, image=self.mp4Img, bd=0,  relief="flat", highlightthickness=0, activebackground="black", command=lambda: self.switch_tabs("Reposts"))
+        self.mp4Img = ImageTk.PhotoImage(Image.open(img_path + 'mp4.png'))
+        self.mp4Btn = tk.Button(self.FrameTabs, image=self.mp4Img, bd=0, relief="flat", highlightthickness=0,
+                                activebackground="black", command=lambda: self.switch_tabs("Reposts"))
         self.mp4Btn.place(x=340, y=0)
 
-        lineFrame = tk.Frame(FrameTabs, bg="#666768")
-        lineFrame.pack(fill="x",pady=(50,0))
+        self.lineFrame = tk.Frame(self.FrameTabs, bg="#666768")
+        self.lineFrame.pack(fill="x", pady=(50, 0))
 
-        #탭 별 프레임 생성
+        # 탭 별 프레임 생성
         self.FrameContent = tk.Frame(self, bg="black", height=450)
         self.FrameContent.pack(side="top", fill="x")
 
-
-    # def edit_name(self):
-    #     self.name_label.place.forget()
-    #     self.edit_nameImg.place.forget()
-    #
-    #     self.name_entry = tk.Entry(self.FrameTop, font=("Arial", 22, 'bold'))
-    #     self.name.insert(0, self.name_entry.get())
-    #     self.name_entry.place(x=30, y=140)
-    #
-    #     #이름 변경 확인 버튼
-    #     self.confirm_nameBtn = tk.Button(self.FrameTop, text="확인", command=self.save_name)
-    #     self.confirm_nameBtn.place(x=200, y=140)
-    #
-    # def save_name(self):
-    #     new_name = self.name_entry.get()
-    #     self.name_text = new_name
-    #     self.name_label.place(x=30, y=140)
-    #     self.edit_nameBtn.place(x=95, y=160)
-
+        # def edit_name(self):
+        #     self.name_label.place.forget()
+        #     self.edit_nameImg.place.forget()
+        #
+        #     self.name_entry = tk.Entry(self.FrameTop, font=("Arial", 22, 'bold'))
+        #     self.name.insert(0, self.name_entry.get())
+        #     self.name_entry.place(x=30, y=140)
+        #
+        #     #이름 변경 확인 버튼
+        #     self.confirm_nameBtn = tk.Button(self.FrameTop, text="확인", command=self.save_name)
+        #     self.confirm_nameBtn.place(x=200, y=140)
+        #
+        # def save_name(self):
+        #     new_name = self.name_entry.get()
+        #     self.name_text = new_name
+        #     self.name_label.place(x=30, y=140)
+        #     self.edit_nameBtn.place(x=95, y=160)
 
         # 게시글 없을 시 프레임에 나타나는 메시지
         frame_messages = {
@@ -619,19 +632,17 @@ class MyPage(tk.Frame):
             frame = tk.Frame(self.FrameContent, bd=0, relief="flat", highlightthickness=0, bg="black")
             frame.place(x=0, y=0, relwidth=1, relheight=1)
 
-            #메시지 라벨
-            label = tk.Label(frame, text=frame_messages[name], fg="gray", bg="black",font=("Arial", 12))
+            # 메시지 라벨
+            label = tk.Label(frame, text=frame_messages[name], fg="gray", bg="black", font=("Arial", 12))
             label.pack(pady=200)
 
             self.frames[name] = frame
 
-
         # 탭 선택 시 변경된 이미지
-        self.Cgmp1Img = ImageTk.PhotoImage(Image.open(img_path+'Cgmp1.png'))
-        self.Cgmp2Img = ImageTk.PhotoImage(Image.open(img_path+'Cgmp2.png'))
-        self.Cgmp3Img = ImageTk.PhotoImage(Image.open(img_path+'Cgmp3.png'))
-        self.Cgmp4Img = ImageTk.PhotoImage(Image.open(img_path+'Cgmp4.png'))
-
+        self.Cgmp1Img = ImageTk.PhotoImage(Image.open(img_path + 'Cgmp1.png'))
+        self.Cgmp2Img = ImageTk.PhotoImage(Image.open(img_path + 'Cgmp2.png'))
+        self.Cgmp3Img = ImageTk.PhotoImage(Image.open(img_path + 'Cgmp3.png'))
+        self.Cgmp4Img = ImageTk.PhotoImage(Image.open(img_path + 'Cgmp4.png'))
 
         self.tab_images = {
             "Threads": [self.mp1Img, self.Cgmp1Img],
@@ -651,31 +662,58 @@ class MyPage(tk.Frame):
 
         controller.place_menu_bar(self, EnumMenuBar.MY_PAGE)
 
-    #탭 전환 시 버튼 이미지 전환
+    # 탭 전환 시 버튼 이미지 전환
     def switch_tabs(self, tab_name):
         self.show_sub_frame(tab_name)
 
         for name, btn in self.tab_buttons.items():
             if name == tab_name:
-                btn.config(image = self.tab_images[name][1]) #현재 선택된 이미지
+                btn.config(image=self.tab_images[name][1])  # 현재 선택된 이미지
             else:
-                btn.config(image = self.tab_images[name][0]) #원래 이미지
+                btn.config(image=self.tab_images[name][0])  # 원래 이미지
 
         self.current_tab = tab_name
-
 
     # 프레임 전환
     def show_sub_frame(self, frames_name):
         for name, frame in self.frames.items():
             frame.lower()  # 프레임 숨기기(맨 아래로 이동)
-        self.frames[frames_name].lift() #프레임 나타내기
-
-
-    #프로필 수정 버튼 누르기
-    # def click_btn(self):
+        self.frames[frames_name].lift()  # 프레임 나타내기
 
     def show_frame(self):
-        self.tkraise()  
+        self.tkraise()
+        self.update_user_info()
+
+
+    def update_user_info(self):
+        msg = Message.create_get_userinfo_msg(self.controller.get_user_id())
+        res = self.controller.request_db(msg)
+
+        print('res1')
+        print(res)
+        # print(res['data']['name'])
+
+        self.name_text = res['data']['name']
+        self.name_label.config(text=self.name_text)
+
+        self.id_text = res['data']['id']
+        self.id_label.config(text=self.id_text)
+
+        msg2 = Message.create_get_follows_msg(self.controller.get_user_id())
+        res2 = self.controller.request_db(msg2)
+        self.follows_cnt_label.config(text=str(len(res2['data']))+ ' followers')
+
+        # print(len(msg2))
+        print(len(res2['data']))
+
+        # print('res2')
+        # print(res2)
+
+        # self.profile_img_text = res['data']['profile_img']
+        # self.profile_label.config(text=self.profile_img_text)
+
+
+
 
 # following 피드 화면
 class Following_FeedPage(tk.Frame):
@@ -866,45 +904,130 @@ class SidebarPage(tk.Frame):
 
 
 # 게시물 작성 페이지
-# class PostFeed(tk.Frame):
-#     def __init__(self, parent, controller, message):
-#         super().__init__(parent)
-#         self.controller = controller
-#
-#         self.configure(bg="black")
-#
-#         topFrame = tk.Frame(self, bg="black")
-#         topFrame.pack(side="top", fill="x")
-#
-#         self.cancelImg = ImageTk.PhotoImage(Image.open(img_path + 'cancel.png').resize((60, 20)))
-#         cancelBtnl = tk.Button(topFrame, image=self.cancelImg, bd=0, bg="black", activebackground="black", command=lambda: controller.show_frame("ForYou_FeedPage"))
-#         cancelBtnl.pack(anchor="w", padx=20, pady=(30,10))
-#
-#         self.newPostImg = ImageTk.PhotoImage(Image.open(img_path + 'newPost.png').resize((125, 30)))
-#         newPostLabel = tk.Label(topFrame, image=self.newPostImg, bd=0, bg="black")
-#         newPostLabel.place(x="175", y="23")
-#
-#         # 구분 회색 선
-#         border = tk.Frame(topFrame, bg="#323232", height=1)
-#         border.pack(fill="x", pady=10)
-#
-#         self.profileimg = ImageTk.PhotoImage(Image.open(img_path + 'profileImg.png').resize((40, 40)))
+class PostFeed(tk.Frame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
 
-        # # 왼쪽-오른쪽 구조
-        # leftFrame = tk.Frame(self, bg="black", width=50)
-        # leftFrame.pack(side="left", anchor="n", padx=10)
-        #
-        # rightFrame = tk.Frame(self, bg="black")
-        # rightFrame.pack(side="left", fill="x")
-        #
-        # imgLabel = tk.Label(leftFrame, image=self.profileimg, bg="black")
-        # imgLabel.pack(anchor="n", padx=10, pady=10)
-        #
-        # idLabel = tk.Label(rightFrame, text=message["id"], fg="white", bg="black", font=("Arial", 11))
-        # idLabel.pack(side="left")
-        #
-        # contentArea = tk.Frame(rightFrame, bg="black")
-        # contentArea.pack(fill="x", anchor="w")
+        self.configure(bg="black")
+
+        topFrame = tk.Frame(self, bg="black")
+        topFrame.pack(side="top", fill="x")
+
+        self.cancelImg = ImageTk.PhotoImage(Image.open(img_path + 'cancel.png').resize((60, 20)))
+        cancelBtnl = tk.Button(topFrame, image=self.cancelImg, bd=0, bg="black", activebackground="black", command=lambda: self.controller.show_frame("ForYou_FeedPage"))
+        cancelBtnl.pack(anchor="w", padx=20, pady=(30,10))
+
+        self.newPostImg = ImageTk.PhotoImage(Image.open(img_path + 'newPost.png').resize((125, 30)))
+        newPostLabel = tk.Label(topFrame, image=self.newPostImg, bd=0, bg="black")
+        newPostLabel.place(x="175", y="23")
+
+        # 구분 회색 선
+        border = tk.Frame(topFrame, bg="#323232", height=1)
+        border.pack(fill="x", pady=10)
+
+        # 전체 묶는 프레임
+        containerFrame = tk.Frame(self, bg="black")
+        containerFrame.pack(side="top", anchor="w", padx=10, pady=10)
+
+        # 왼쪽: 프로필 사진, 오른쪽: 아이디 + 게시글 구조
+        leftFrame = tk.Frame(containerFrame, bg="black", width=50)
+        leftFrame.pack(side="left", anchor="n", padx=10)
+
+        rightFrame = tk.Frame(containerFrame, bg="black")
+        rightFrame.pack(side="left", fill="x")
+
+        self.profileimg = ImageTk.PhotoImage(Image.open(messages[0]["img"]).resize((45, 45)))
+        imgLabel = tk.Label(leftFrame, image=self.profileimg, bg="pink")
+        imgLabel.pack(anchor="n", padx=10, pady=10)
+
+        contentArea = tk.Frame(rightFrame, bg="black")
+        contentArea.pack(fill="x", anchor="w")
+
+        # 아이디
+        topInfo = tk.Frame(contentArea, bg="black")
+        topInfo.pack(anchor="w", pady=(0, 2))
+
+        self.idLabel = tk.Label(topInfo, text="", fg="white", bg="black", font=("Arial", 16))
+        self.idLabel.pack(side="left")
+
+        # 게시글 작성
+        self.textEntry = tk.Text(contentArea,bd=0, height="5", bg="black", fg="gray", font=("Arial", 16), insertbackground="gray")
+        self.textEntry.pack(side="left")
+        self.textEntry.insert(1.0, "What's new?")
+        self.click_count = 0
+        self.textEntry.bind('<Button-1>', lambda e: self.controller.on_Text_click(self.textEntry, "What's new?"))
+        #textEntry.bind('<Button-1>', lambda e: self.controller.on_Text_click(textEntry, self.click_count))
+
+        # 추가한 이미지 들어갈 프레임 --- 위치 수정 필요
+        # photoFrame = tk.Frame(contentArea, bg="blue")
+        # photoFrame.pack()
+
+        # 추가한 이미지 표시용 라벨
+        self.photoLabel = tk.Label(rightFrame, bg="black")
+        self.photoLabel.pack(anchor="w", pady=5)
+
+        # 사진 추가 버튼
+        btnFrame = tk.Frame(rightFrame, bg="black")
+        btnFrame.pack(anchor="w")
+
+        self.photoImg = ImageTk.PhotoImage(Image.open(img_path + 'photo.png').resize((40, 40)))
+        photoBtn = tk.Button(btnFrame, image=self.photoImg, bd=0, bg="black", activebackground="black", command=self.open_Img_File)
+        photoBtn.pack(side="left")
+
+        self.postImg = ImageTk.PhotoImage(Image.open(img_path + 'post.png').resize((65, 40)))
+        postBtn = tk.Button(btnFrame, image=self.postImg, bd=0, background="black", activebackground="black")
+        postBtn.pack(padx=(200,0))
+
+        controller.place_menu_bar(self, EnumMenuBar.HOME)
+
+
+    def open_Img_File(self):
+        file_path = filedialog.askopenfilename(
+            title="파일 선택",
+            filetypes=(("모든 파일", "*.*"), ("이미지 파일", "*.png;*.jpg;*.jpeg"))
+        )
+        if file_path:
+            print(f"선택된 파일 경로: {file_path}")
+            try:
+                self.img = Image.open(file_path).resize((200, 200))  # 원하는 크기로 조절
+                self.selected_photo = ImageTk.PhotoImage(self.img)  # 인스턴스 변수로 저장
+                self.photoLabel.config(image=self.selected_photo)
+
+                self.selected_photo_path = file_path  # 이미지 경로 저장 (나중에 서버 전송용)
+            except Exception as e:
+                print(f"이미지 열기 오류: {e}")
+
+    def show_frame(self):
+        self.tkraise()
+        self.update_user_info()
+
+    def update_user_info(self):
+        msg = Message.create_get_userinfo_msg(self.controller.get_user_id())
+        res = self.controller.request_db(msg)
+        print(res)
+        print(res['data']['name'])
+
+        self.id_text = res['data']['id']
+        self.idLabel.config(text=self.id_text)
+
+
+# 활동 내역 페이지
+class ActivityPage(tk.Frame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        self.activitypageImg = ImageTk.PhotoImage(Image.open(img_path + 'activitypage.png'))
+
+        label = tk.Label(self, image=self.activitypageImg)
+        label.pack()
+
+        controller.place_menu_bar(self, EnumMenuBar.ACTIVITY)
+
+    def show_frame(self):
+        self.tkraise()
+
+
 
 # 메시지 페이지
 class MessagesPage(tk.Frame):
