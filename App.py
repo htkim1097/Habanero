@@ -1,5 +1,6 @@
+# App.py
 import tkinter as tk
-from tkinter import ttk, font, filedialog
+from tkinter import ttk, font
 from PIL import ImageTk, Image, ImageDraw
 from os import path
 import socket
@@ -7,6 +8,10 @@ from Msg import *
 import Config
 from copy import deepcopy
 import datetime
+from tkinter import filedialog
+import io
+import base64
+
 
 from Threads.threads_sera import ActivityPage
 
@@ -42,6 +47,8 @@ messages = [
      "elapsed_time": "2025-08-04 15:40:33",
      "img": img_path + "/mudo.jpg"},
 ]
+filename = None
+
 
 class EnumMenuBar:
     HOME = 0
@@ -57,8 +64,8 @@ class App(tk.Tk):
         self.windows_height = self.winfo_screenheight()
         self.app_width = 471
         self.app_height = 954
-        self.bottom_bar_height = 100        # 하단 메뉴바 높이
-        self.contents_frame_height = self.app_height - self.bottom_bar_height          # 하단 메뉴 바를 제외한 크기
+        self.bottom_bar_height = 100  # 하단 메뉴바 높이
+        self.contents_frame_height = self.app_height - self.bottom_bar_height  # 하단 메뉴 바를 제외한 크기
         self.center_x = int(self.windows_width / 2 - self.app_width / 2)
         self.center_y = int(self.windows_height / 2 - self.app_height / 2) - 25
 
@@ -110,7 +117,7 @@ class App(tk.Tk):
 
     def add_frame(self, Frame, parent=None):
         """
-        Frame 클래스를 추가한다. parent는 frame 흐름 상의 계층적 부모를 넣어준다. 
+        Frame 클래스를 추가한다. parent는 frame 흐름 상의 계층적 부모를 넣어준다.
         """
         page_name = Frame.__name__
         if parent is None:
@@ -153,6 +160,15 @@ class App(tk.Tk):
         if string in text.get("1.0", tk.END):
             text.delete("1.0", tk.END)
 
+
+    # def on_Text_click(self, text, click_count):
+    #     click_count += 1
+    #     if click_count == 1:
+    #         text.config(text="")
+    #     else:
+    #         pass
+
+
     # def show_error_popup(self, controller):
     #     """
     #     오류 팝업을 띄운다.
@@ -183,14 +199,14 @@ class App(tk.Tk):
         y = mask_img.height / 2
         r = min(mask_img.width, mask_img.height)
 
-        x1 = x - r/2
-        y1 = y - r/2
-        x2 = x + r/2
-        y2 = y + r/2
+        x1 = x - r / 2
+        y1 = y - r / 2
+        x2 = x + r / 2
+        y2 = y + r / 2
 
         draw = ImageDraw.Draw(mask_img)
 
-        draw.ellipse((x1,y1, x2, y2), fill = 'white', outline ='white')
+        draw.ellipse((x1, y1, x2, y2), fill='white', outline='white')
 
         image_pix = image.load()
         mask_pix = mask_img.load()
@@ -200,7 +216,7 @@ class App(tk.Tk):
             for x in range(W):
                 value = mask_pix[x, y]
                 if value == 0:
-                    image_pix[x, y]=(0,0,0,0) #투명 값 설정
+                    image_pix[x, y] = (0, 0, 0, 0)  # 투명 값 설정
         return image
 
     def request_db(self, msg):
@@ -212,7 +228,7 @@ class App(tk.Tk):
 
         try:
             while True:
-                send_data = str(msg).encode()
+                send_data = (str(msg) + "<EOF>").encode()
                 client_socket.send(send_data)
                 print(f"[데이터 송신] - {send_data}")
 
@@ -235,7 +251,7 @@ class App(tk.Tk):
         finally:
             client_socket.close()
 
-    def place_menu_bar(self, place_to, active_menu:int):
+    def place_menu_bar(self, place_to, active_menu: int):
         """
         홈 맨 아래 아이콘들을 배치한다.
         """
@@ -342,7 +358,7 @@ class LoginPage(tk.Frame):
         self.pwEntry.bind("<Return>", lambda e: self.process_login())
 
         # 로그인 파란색 버튼
-        loginBtn = tk.Button(self, image=self.loginImg, bd=0, command=lambda : self.process_login())
+        loginBtn = tk.Button(self, image=self.loginImg, bd=0, command=lambda: self.process_login())
         loginBtn.bind("<Return>", lambda e: self.process_login())
         loginBtn.place(x=30, y=595)
 
@@ -371,7 +387,7 @@ class LoginPage(tk.Frame):
         checkBtn.place(x=280, y=130)
 
     def show_frame(self):
-        self.tkraise()        
+        self.tkraise()
 
     def hide_error(self):
         self.error_frame.place_forget()
@@ -459,7 +475,7 @@ class JoinPage(tk.Frame):
         jloginBtn.place(x=68, y=850)
 
     def show_frame(self):
-        self.tkraise()     
+        self.tkraise()
 
 # 홈 화면
 class HomePage(tk.Frame):
@@ -531,6 +547,7 @@ class HomePage(tk.Frame):
 
             if user_info["status"] == EnumMsgStatus.SUCCESS:
                 if user_info["data"]["profile_img"] is not None:
+
                     print(user_info["data"]["profile_img"])   # TODO 이미지 불러오기 테스트 후 수정요
                     # img = Image.open(profile_img).resize((40, 40))
                     profile_img_path = Image.open(img_path + "noImageMan.png")  # 임시
@@ -811,7 +828,7 @@ class Following_FeedPage(tk.Frame):
         controller.place_menu_bar(self, EnumMenuBar.HOME)
 
     def show_frame(self):
-        self.tkraise()  
+        self.tkraise()
 
 # 각 게시글
 class FeedItemFrame(tk.Frame):
@@ -825,7 +842,7 @@ class FeedItemFrame(tk.Frame):
         self.repostimg = repost_img
         self.msgimg = msg_img
 
-        profile_img = ImageTk.PhotoImage(profile_img_path)
+        self.profile_img = ImageTk.PhotoImage(profile_img_path)
 
         # 왼쪽-오른쪽 구조
         leftFrame = tk.Frame(self, bg="black", width=50)
@@ -834,8 +851,9 @@ class FeedItemFrame(tk.Frame):
         rightFrame = tk.Frame(self, bg="black")
         rightFrame.pack(side="left", fill="x")
 
-        imgLabel = tk.Label(leftFrame, image=profile_img)
+        imgLabel = tk.Label(leftFrame, image=self.profile_img, bg="black")
         # 프로필 이미지 띄우는 중 그러나 안됨 왜지?
+        #imgLabel.image = profile_img
         imgLabel.pack(anchor="n")
 
         contentArea = tk.Frame(rightFrame, bg="black")
@@ -871,7 +889,8 @@ class FeedItemFrame(tk.Frame):
         feedLabel.pack(anchor="w", pady=(0, 10))
 
         # 게시글 이미지
-        if feed_data["image"] is not None and feed_data["image"] != b"None":
+        #if feed_data["image"] is not None and feed_data["image"] != b"":
+        if len(str(feed_data["image"])) > 100:
             self.post_img = ImageTk.PhotoImage(Image.open(feed_data["image"]).resize((300, 300)))
             imgLabel = tk.Label(contentArea, image=self.post_img, bg="white")
             imgLabel.pack(anchor="w", pady=(0, 10))
@@ -909,7 +928,17 @@ class FeedItemFrame(tk.Frame):
         print("hi")
 
     def show_frame(self):
-        self.tkraise()  
+        self.tkraise()
+        # self.update_post_data()
+
+    # def update_post_data(self):
+    #     msg = Message.create_post_data(self.controller.get_user_id())
+    #     res = self.controller.request_db(msg)
+    #     print(res)
+    #     #print(res['data']['name'])
+
+    #     # self.id_text = res['id']
+    #     # self.idLabel.config(text=self.id_text)
 
 # Feeds 사이드바
 class SidebarPage(tk.Frame):
@@ -1010,11 +1039,26 @@ class PostFeed(tk.Frame):
         photoBtn.pack(side="left")
 
         self.postImg = ImageTk.PhotoImage(Image.open(img_path + 'post.png').resize((65, 40)))
-        postBtn = tk.Button(btnFrame, image=self.postImg, bd=0, background="black", activebackground="black")
+        postBtn = tk.Button(btnFrame, image=self.postImg, bd=0, background="black", activebackground="black", command=self.update_user_info)
         postBtn.pack(padx=(200,0))
 
         controller.place_menu_bar(self, EnumMenuBar.HOME)
 
+    # 클라이언트에서 이미지 변환
+    # image_path = "path/to/your/image.jpg"
+    # image = Image.open(image_path)
+    # image_bytes = io.BytesIO()
+    # image.save(image_bytes, format='JPEG') # 또는 다른 포맷 (PNG, GIF 등)
+    # image_bytes = image_bytes.getvalue()
+    # image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+
+    # 서버로 전송
+
+    # 서버에서 받은 blob 데이터를 이미지로 변환
+    # image_base64 = "..." # Base64 인코딩된 문자열
+    # image_bytes = base64.b64decode(image_base64)
+    # data_io = io.BytesIO(data[0][0])
+    # img = Image.open(data_io)
 
     def open_Img_File(self):
         file_path = filedialog.askopenfilename(
@@ -1024,11 +1068,20 @@ class PostFeed(tk.Frame):
         if file_path:
             print(f"선택된 파일 경로: {file_path}")
             try:
-                self.img = Image.open(file_path).resize((200, 200))  # 원하는 크기로 조절
+                self.img = Image.open(file_path).resize((300, 300))  # 원하는 크기로 조절
                 self.selected_photo = ImageTk.PhotoImage(self.img)  # 인스턴스 변수로 저장
                 self.photoLabel.config(image=self.selected_photo)
+                #self.selected_photo_path = file_path  # 이미지 경로 저장 (나중에 서버 전송용)
 
-                self.selected_photo_path = file_path  # 이미지 경로 저장 (나중에 서버 전송용)
+                self.file_img = open(file_path, 'rb').read()
+                print("오픈 파일=================================")
+                print(len(self.file_img))
+
+                #image_base64 = base64.b64encode(file_img).decode('utf-8')
+                # self.image_base64 = base64.b64encode(file_img)
+                # print("파일 베이스================================")
+                # print(len(self.image_base64))
+
             except Exception as e:
                 print(f"이미지 열기 오류: {e}")
 
@@ -1077,8 +1130,7 @@ class MessagesPage(tk.Frame):
         self.configure(bg="black")
 
         # Messages 문구
-        messages_text_btn = tk.Button(self, image=self.messages_text_img, bd=0, background="black",
-                                      activebackground="black", highlightthickness=0, command=self.controller.show)
+        messages_text_btn = tk.Button(self, image=self.messages_text_img, bd=0, background="black", activebackground="black", highlightthickness=0, command=self.controller.show)
         messages_text_btn.place(x=20, y=30)
 
         # 채팅 방 추가
@@ -1181,6 +1233,7 @@ class MsgFriendsPage(tk.Frame):
 
         for friend in res["data"]:
             msg = Message.create_get_userinfo_msg(friend[0])
+            print("dddddddddddddddddddddddddddddddddddddddd", msg)
             friend_infos = self.controller.request_db(msg)
             data = friend_infos["data"]
 
@@ -1189,7 +1242,7 @@ class MsgFriendsPage(tk.Frame):
             self.bind_mousewheel_recursive(frame)
 
     def create_friend_item(self, id, name, profile_img):
-        frame = FriendFrame(self.list_frame, id, name, profile_img)
+        frame = FriendFrame(self.list_frame, self, id, name, profile_img)
         frame.pack(fill="x", pady=2, padx=5)
 
         return frame
@@ -1224,8 +1277,9 @@ class MsgFriendsPage(tk.Frame):
 
 # 친구 목록 아이템
 class FriendFrame(tk.Frame):
-    def __init__(self, parent, id, name, profile_img):
+    def __init__(self, parent, controller, id, name, profile_img):
         super().__init__(parent)
+        self.controller = controller
         self.config(bg="#1e1e1e", relief="flat", highlightbackground="gray", highlightthickness=0)
         self.frame_id = id
 
@@ -1234,7 +1288,7 @@ class FriendFrame(tk.Frame):
         except:
             img = Image.open(img_path + "noImageMan.png")  # 이미지 불러오기 실패 시
 
-        croped_img = parent.master.controller.crop_img_circle(img)
+        croped_img = controller.controller.crop_img_circle(img)
         photo = ImageTk.PhotoImage(croped_img)
         image_label = tk.Label(self, image=photo, bg="#1e1e1e")
         image_label.image = photo
@@ -1248,29 +1302,14 @@ class FriendFrame(tk.Frame):
         status_label.pack(anchor="w")
         text_frame.pack(side="left", fill="x", expand=True)
 
+        # controller에 있는 on_click 연결
+
         for child in self.winfo_children():
             child.bind("<Button-1>", lambda e: parent.on_click(self))
         self.bind("<Button-1>", lambda e: parent.on_click(self))
 
 # 채팅방
 class ChatRoomPage(tk.Frame):
-
-# 클라이언트에서 이미지 변환
-# image_path = "path/to/your/image.jpg"
-# image = Image.open(image_path)
-# image_bytes = io.BytesIO()
-# image.save(image_bytes, format='JPEG') # 또는 다른 포맷 (PNG, GIF 등)
-# image_bytes = image_bytes.getvalue()
-# image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-
-# 서버로 전송
-
-# 서버에서 받은 blob 데이터를 이미지로 변환
-# image_base64 = "..." # Base64 인코딩된 문자열
-# image_bytes = base64.b64decode(image_base64)
-# data_io = io.BytesIO(data[0][0])
-# img = Image.open(data_io)
-
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
@@ -1320,8 +1359,6 @@ class ChatRoomPage(tk.Frame):
 
         self.scrollable_frame.bind("<Configure>", self.on_configure)
         self.canvas.pack(side="left", fill="both", expand=True)
-
-
 
     def on_configure(self, event):
         """

@@ -53,20 +53,26 @@ class ThreadsServer:
 
         try:
             while True:
-                data = client_socket.recv(baudrate)
+                recv_data = b""
+                while True:
+                    chunk = client_socket.recv(baudrate)
+                    if not chunk:
+                        break
 
-                if not data:
-                    break
+                    recv_data += chunk
 
-                en_data = data.decode()
-                print(f"[데이터 수신 {address}] - {en_data}")
+                    if b"<EOF>" in recv_data:
+                        recv_data = recv_data.split(b"<EOF>")[0]
+                        break
 
-                repr_data = eval(en_data)
+                    print(f"[데이터 수신 {address}] - {recv_data}")
 
-                res = self.handle_data(repr_data)
-                print(f"[데이터 송신 {address}] - {res}")
+                if recv_data:
+                    repr_data = eval(recv_data.decode())
+                    res = self.handle_data(repr_data)
+                    client_socket.send((str(res) + "<EOF>").encode())
+                    print(f"[데이터 송신 {address}] - {res}")
 
-                client_socket.send((str(res) + "<EOF>").encode())
         except Exception as e:
             print(f"[오류:handle_client] - {e}")
         finally:
