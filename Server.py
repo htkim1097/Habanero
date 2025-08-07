@@ -99,6 +99,8 @@ class ThreadsServer:
                 return self.handle_get_follows(msg)
             elif msg_type == EnumMessageType.GET_USER_INFO:
                 return self.handle_get_userinfo(msg)
+            elif msg_type == EnumMessageType.ADD_CHAT_ROOM:
+                return self.handle_add_chatroom(msg)
             else:
                 raise Exception("[오류:handle_data] - 클라이언트로부터 받은 데이터의 type 값에 오류가 있습니다.")
             
@@ -170,10 +172,10 @@ class ThreadsServer:
         try:
             # parent_id가 없으면 게시글
             if msg['parent_id'] is None:
-                res = self.send_query(f"INSERT INTO post VALUES (null, '{msg["content"]}', '{msg["img"]}', '{msg["id"]}', '{msg["post_time"]}', null);")            
+                res = self.send_query(f"INSERT INTO post VALUES (null, \"{msg["content"]}\", \"{msg["img"]}\", \"{msg["id"]}\", \"{msg["post_time"]}\", null);")            
             # parent_id가 있으면 댓글
             else:
-                res = self.send_query(f"INSERT INTO post VALUES (null, '{msg["content"]}', '{msg["img"]}', '{msg["id"]}', '{msg["post_time"]}', '{msg["parent_id"]}');")
+                res = self.send_query(f"INSERT INTO post VALUES (null, \"{msg["content"]}\", \"{msg["img"]}\", \"{msg["id"]}\", \"{msg["post_time"]}\", \"{msg["parent_id"]}\");")
 
             return Message.create_response_msg(
                 type=m_type,
@@ -313,6 +315,27 @@ class ThreadsServer:
         
         except Exception as e:
             print(f"[오류:handle_get_userinfo]- {e}")
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.FAILED, 
+                message=e
+                )
+        
+    def handle_add_chatroom(self, msg):
+        m_type = EnumMessageType.ADD_CHAT_ROOM
+        try:
+            res = self.send_query(f"insert into chat_room values (null, '{msg["user_id"]}', '{msg["chatroom_date"]}');")
+            # lastrowid
+            print(res)
+            
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.SUCCESS, 
+                data=""
+                )
+        
+        except Exception as e:
+            print(f"[오류:handle_add_chatroom]- {e}")
             return Message.create_response_msg(
                 type=m_type,
                 status=EnumMsgStatus.FAILED, 

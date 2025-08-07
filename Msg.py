@@ -16,6 +16,7 @@ class EnumMessageType:
     GET_USER_INFO = 11
     GET_MSG_DATA = 12
     ADD_MST_DATA = 13
+    ADD_CHAT_ROOM = 14
 
 class EnumMsgStatus:
     """
@@ -143,7 +144,19 @@ class Message:
         }
     
     @classmethod
-    def create_get_chat_data(cls, chatroom_id):
+    def create_add_chatroom_msg(cls, user_id, chatroom_date):
+        """
+        클라이언트 -> 서버  
+        채팅방을 만든다.  
+        """
+        return {
+            "type" : EnumMessageType.ADD_CHAT_ROOM,
+            "user_id" : user_id,
+            "chatroom_date" : chatroom_date,
+        }
+    
+    @classmethod
+    def create_get_chat_data_msg(cls, chatroom_id):
         """
         클라이언트 -> 서버  
         to_user_id와 채팅한 메시지 데이터들을 받아온다.  
@@ -154,7 +167,7 @@ class Message:
         }
     
     @classmethod
-    def create_add_message(cls, chatroom_id, data):
+    def create_add_chat_msg(cls, chatroom_id, data):
         """
         클라이언트 -> 서버  
         chatroom_id의 채팅방에서 입력된 data를 저장하도록 요청한다.  

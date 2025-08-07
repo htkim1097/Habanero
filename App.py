@@ -106,7 +106,6 @@ class App(tk.Tk):
         self.add_frame(firstPage, self)
         self.add_frame(SidebarPage, self)
         self.add_frame(Following_FeedPage, self)
-        self.add_frame(ChatRoomPage, self)
         self.add_frame(PostFeed, self)
         self.add_frame(ActivityPage, self)
 
@@ -1188,6 +1187,9 @@ class MsgFriendsPage(tk.Frame):
         cencel_btn = tk.Button(self, image=self.cancel_img, bd=0, background="black", activebackground="black", highlightthickness=0, command=lambda: self.on_click_cancel())
         cencel_btn.place(x=20, y=50)
 
+        chat_btn = tk.Button(self, text="chat", command=lambda: self.chat())
+        chat_btn.place(x= 400, y=50)
+
         # New message 문구
         new_message_text = tk.Label(self, image=self.new_message_text_img, bd=0, highlightthickness=0, background="black", borderwidth=0)
         new_message_text.place(x=170, y=50)
@@ -1198,7 +1200,7 @@ class MsgFriendsPage(tk.Frame):
 
         # 친구 목록
         self.list_frame = tk.Frame(self)
-        self.list_frame.place(x=0, y=200, width=self.controller.app_width, height=self.controller.contents_frame_height - 200)
+        self.list_frame.place(x=0, y=140, width=self.controller.app_width - 5, height=self.controller.contents_frame_height - 140)
 
         self.canvas = tk.Canvas(self.list_frame, bg="black", highlightthickness=0)
 
@@ -1231,19 +1233,24 @@ class MsgFriendsPage(tk.Frame):
         msg = Message.create_get_follows_msg(self.controller.get_user_id())
         res = self.controller.request_db(msg)
 
+        for widget in self.scrollable_frame.winfo_children():
+            widget.destroy()
+        self.friends_list.clear()
+
         for friend in res["data"]:
             msg = Message.create_get_userinfo_msg(friend[0])
-            print("dddddddddddddddddddddddddddddddddddddddd", msg)
             friend_infos = self.controller.request_db(msg)
             data = friend_infos["data"]
 
             frame = self.create_friend_item(data["id"], data["name"], data["profile_img"])
-            self.friends_list.append(frame)
             self.bind_mousewheel_recursive(frame)
 
+        for f in self.friends_list:
+            f.pack(fill="x", pady=2, padx=5)
+
     def create_friend_item(self, id, name, profile_img):
-        frame = FriendFrame(self.list_frame, self, id, name, profile_img)
-        frame.pack(fill="x", pady=2, padx=5)
+        frame = FriendFrame(self.scrollable_frame, self, id, name, profile_img)
+        self.friends_list.append(frame)
 
         return frame
 
@@ -1255,11 +1262,10 @@ class MsgFriendsPage(tk.Frame):
             self.bind_mousewheel_recursive(child)
 
     def on_mousewheel_event(self, event):
-        self.canvas.yview_scroll(int((event.delta / 120)), "units")
+        if len(self.friends_list) > 13:
+            self.canvas.yview_scroll(int((-1 * event.delta / 120)), "units")
 
     def on_click(self, frame):
-        print(self.selected_friend, "  ", frame.frame_id)
-
         # 선택 안된 아이템을 클릭
         if self.selected_friend != frame.frame_id:
             self.selected_friend = frame.frame_id
@@ -1275,6 +1281,15 @@ class MsgFriendsPage(tk.Frame):
 
             frame.configure(highlightthickness=0)
 
+    def chat(self):
+        now = datetime.datetime.now()
+        msg = Message.create_add_chatroom_msg(self.controller.get_user_id(), now)
+        # res = self.controller.request_db(msg)
+        # print("ddddddddddd", res)
+
+        # chatRoom = ChatRoomPage(self, self.controller, res["data"])
+        # chatRoom.show_frame()
+
 # 친구 목록 아이템
 class FriendFrame(tk.Frame):
     def __init__(self, parent, controller, id, name, profile_img):
@@ -1286,34 +1301,37 @@ class FriendFrame(tk.Frame):
         try:
             img = Image.open(profile_img).resize((40, 40))
         except:
-            img = Image.open(img_path + "noImageMan.png")  # 이미지 불러오기 실패 시
+            img = Image.open(img_path + "profileImg.png").resize((40, 40))  # 이미지 불러오기 실패 시
 
         croped_img = controller.controller.crop_img_circle(img)
         photo = ImageTk.PhotoImage(croped_img)
         image_label = tk.Label(self, image=photo, bg="#1e1e1e")
         image_label.image = photo
         image_label.pack(side="left", padx=10, pady=5)
+        image_label.bind("<Button-1>", lambda e: controller.on_click(self))
 
         text_frame = tk.Frame(self, bg="#1e1e1e")
+        text_frame.bind("<Button-1>", lambda e: controller.on_click(self))
         name_label = tk.Label(text_frame, text=id, fg="white", font=("Arial", 12, "bold"), anchor="w", bg="#1e1e1e", width=39)
+        name_label.bind("<Button-1>", lambda e: controller.on_click(self))
         status_label = tk.Label(text_frame, text=name, font=("Arial", 10), anchor="w", bg="#1e1e1e", fg="gray")
+        status_label.bind("<Button-1>", lambda e: controller.on_click(self))
 
         name_label.pack(anchor="w", expand=True)
         status_label.pack(anchor="w")
         text_frame.pack(side="left", fill="x", expand=True)
 
-        # controller에 있는 on_click 연결
-
-        for child in self.winfo_children():
-            child.bind("<Button-1>", lambda e: parent.on_click(self))
-        self.bind("<Button-1>", lambda e: parent.on_click(self))
+        self.bind("<Button-1>", lambda e: controller.on_click(self))
 
 # 채팅방
 class ChatRoomPage(tk.Frame):
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller, chatroom_id):
         super().__init__(parent)
         self.controller = controller
         self.parent = parent
+
+        # 메시지를 불러와서 메시지 작성자가 나이면 오른쪽에 아니면 왼쪽에
+        # 메시지 작성자의 첫 메시지 옆에 프로필 아이콘 띄우기
 
         self.friend_profile_img = ImageTk.PhotoImage(Image.open(img_path + 'messagesText.png'))
         self.add_file_img = ImageTk.PhotoImage(Image.open(img_path + 'plus.png'))
@@ -1371,7 +1389,7 @@ class ChatRoomPage(tk.Frame):
         self.load_chat_data()   # 비동기 실행 필요
 
     def load_chat_data(self):
-        msg = Message.create_get_chat_data(self.controller.get_user_id())
+        msg = Message.create_get_chat_data_msg(self.controller.get_user_id())
         res = self.controller.request_db(msg)
 
         if res["status"]:
@@ -1383,10 +1401,7 @@ class ChatRoomPage(tk.Frame):
     def send_text(self):
         text = self.message_bar_entry.get()
         MessageData.create_msg_data(self.controller.get_user_id(), )
-
-
-
-        Message.create_add_message
+        Message.create_add_chat_msg
         
 
     def send_image(self):
