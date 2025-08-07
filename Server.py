@@ -66,7 +66,7 @@ class ThreadsServer:
                 res = self.handle_data(repr_data)
                 print(f"[데이터 송신 {address}] - {res}")
 
-                client_socket.send(str(res).encode())
+                client_socket.send((str(res) + "<EOF>").encode())
         except Exception as e:
             print(f"[오류:handle_client] - {e}")
         finally:
@@ -164,10 +164,10 @@ class ThreadsServer:
         try:
             # parent_id가 없으면 게시글
             if msg['parent_id'] is None:
-                res = self.send_query(f"INSERT INTO post VALUES (null, '{msg["content"]}', '{msg["location"]}', '{msg["id"]}', '{msg["post_time"]}', null);")            
+                res = self.send_query(f"INSERT INTO post VALUES (null, '{msg["content"]}', '{msg["img"]}', '{msg["id"]}', '{msg["post_time"]}', null);")            
             # parent_id가 있으면 댓글
             else:
-                res = self.send_query(f"INSERT INTO post VALUES (null, '{msg["content"]}', '{msg["location"]}', '{msg["id"]}', '{msg["post_time"]}', '{msg["parent_id"]}');")
+                res = self.send_query(f"INSERT INTO post VALUES (null, '{msg["content"]}', '{msg["img"]}', '{msg["id"]}', '{msg["post_time"]}', '{msg["parent_id"]}');")
 
             return Message.create_response_msg(
                 type=m_type,
@@ -184,16 +184,59 @@ class ThreadsServer:
 
     def handle_get_feed(self, msg):
         """
-        피드 데이터를 전달한다.
+        피드 데이터를 전달한다.  
         """
         m_type = EnumMessageType.GET_FEED
         # 임시로 모든 피드를 불러오도록 함. 수정 필용.
         try:
-            res = self.send_query(f"select * from post")
+            # id가 None이면 전체 post 중 랜덤으로 보냄(자신 post 포함).
+            if msg["id"] is None:
+                posts = self.send_query("select * from post")
+
+            # id가 None이 아니면 해당 id의 following 계정과 자신 post를 보냄.
+            else:
+                # id 사용자가 팔로잉한 대상들의 id를 불러옴.
+                f_res = self.send_query(f"select follower_id from follow where following_id = '{msg["id"]}'")
+                
+                f_list = []
+                f_list.append(msg["id"])    # 자신의 id 추가
+
+                # 팔로워 id 추가
+                for f in f_res:
+                    f_list.append(f[0])
+
+                posts_res = self.send_query("select * from post")
+                
+                # 팔로잉한 사용자의 포스트로만 필터링
+                posts = []
+                for post in posts_res:
+                    # 포스트 작성자 id가 follwing 리스트에 있을 때
+                    if post[3] in f_list:
+                        posts.append(post)
+
+            datas = {}
+
+            for post in posts:
+                # like_cnt는 user_post_like에서 post_id가 같은 것들만 카운트
+                like_res = self.send_query(f"select * from user_post_like where post_id = '{post[0]}'")
+
+                # comment_cnt는 post 중에 parent_id가 post_id인 것들만 카운트
+                comment_res = self.send_query(f"select * from post where parent_id = '{post[0]}'")
+
+                data = MessageData.create_post_data(
+                    id=post[3],
+                    content=post[1],
+                    like_cnt= len(like_res),
+                    comment_cnt= len(comment_res),
+                    writed_time=post[4],
+                    image=post[2],
+                    )
+                datas[post[0]] = data
+
             return Message.create_response_msg(
                 type=m_type,
                 status=EnumMsgStatus.SUCCESS, 
-                data=res
+                data=datas
                 )
         except Exception as e:
             print(f"[오류:handle_get_feed]- {e}")
@@ -253,6 +296,7 @@ class ThreadsServer:
         m_type = EnumMessageType.GET_USER_INFO
         try:
             res = self.send_query(f"select * from user where user_id = '{msg["id"]}'")
+            
             data = MessageData.create_userinfo_data(res[0][0], res[0][3], res[0][1], res[0][4])
 
             return Message.create_response_msg(

@@ -470,9 +470,6 @@ class HomePage(tk.Frame):
         self.homeLogoImg = ImageTk.PhotoImage(Image.open(img_path + 'homeLogo2.png'))
         self.homeRightImg = ImageTk.PhotoImage(Image.open(img_path + 'homeRight2.png'))
 
-        # 프로필 사진 받는 부분 어떻게 할지 고민,,
-        self.profileimg = ImageTk.PhotoImage(Image.open(img_path + 'profileImg.png').resize((40, 40)))
-
         self.likeimg = ImageTk.PhotoImage(Image.open(img_path + 'like.png').resize((20, 20)))
         self.likedimg = ImageTk.PhotoImage(Image.open(img_path + 'like_red.png').resize((20, 17)))
         self.commentimg = ImageTk.PhotoImage(Image.open(img_path + 'reply.png').resize((20, 20)))
@@ -507,29 +504,16 @@ class HomePage(tk.Frame):
         homeRightBtn.place(x=400, y=28)
 
         # 컨탠츠 프레임
-        contentFrame = tk.Frame(self, bg="black")
-        contentFrame.place(x=0, y=100, relwidth=1, height=self.controller.contents_frame_height - 100)
-
-        for message in messages:
-            feedItem = FeedItemFrame(
-                contentFrame,
-                self.profileimg,
-                message,
-                self.like_images,
-                self.commentimg,
-                self.repostimg,
-                self.msgimg
-            )
-            feedItem.pack(fill="x", pady=(0, 5))
-
-            # 피드 구분 회색 선
-            border = tk.Frame(contentFrame, bg="#323232", height=1)
-            border.pack(fill="x", pady=10)
+        self.contentFrame = tk.Frame(self, bg="black")
+        self.contentFrame.place(x=0, y=100, relwidth=1, height=self.controller.contents_frame_height - 100)
 
         controller.place_menu_bar(self, EnumMenuBar.HOME)
 
     def show_frame(self):
-        self.tkraise()     
+        self.tkraise()   
+        self.load_feed()  
+
+    def load_feed(self):
         msg = Message.create_get_feed_msg(None)
         res = self.controller.request_db(msg)
 
@@ -539,8 +523,36 @@ class HomePage(tk.Frame):
         #  2: {'id': 'ht', 'content': '', 'image': None, 'like_cnt': 1, 'comment_cnt': 1, 'writed_time': datetime.datetime(2025, 8, 4, 12, 14, 5)},
         # }
 
-        print(res)
+        for feed_data in res["data"].values():
+            # 작성자의 프로필 이미지 받아오기
+            msg = Message.create_get_userinfo_msg(feed_data["id"])
+            user_info = self.controller.request_db(msg)
+            profile_img_path = None
 
+            if user_info["status"] == EnumMsgStatus.SUCCESS:
+                if user_info["data"]["profile_img"] is not None:
+                    print(user_info["data"]["profile_img"])   # TODO 이미지 불러오기 테스트 후 수정요
+                    # img = Image.open(profile_img).resize((40, 40))
+                    profile_img_path = Image.open(img_path + "noImageMan.png")  # 임시
+                else:
+                    profile_img_path = Image.open(img_path + "noImageMan.png")  # 이미지 불러오기 실패 시
+            else:
+                pass
+
+            feedItem = FeedItemFrame(
+                self.contentFrame,
+                profile_img_path,
+                feed_data,
+                self.like_images,
+                self.commentimg,
+                self.repostimg,
+                self.msgimg
+            )
+            feedItem.pack(fill="x", pady=(0, 5))
+
+            # 피드 구분 회색 선
+            border = tk.Frame(self.contentFrame, bg="#323232", height=1)
+            border.pack(fill="x", pady=10)
 
 # 마이 페이지 화면
 class MyPage(tk.Frame):
@@ -780,21 +792,21 @@ class Following_FeedPage(tk.Frame):
         self.like_images = [self.likeimg, self.likedimg] # 0: 빈 하트, 1: 빨간 하트
         self.like_state = 0
 
-        for message in messages:
-            feedItem = FeedItemFrame(
-                contentFrame,
-                self.profileimg,
-                message,
-                self.like_images,
-                self.commentimg,
-                self.repostimg,
-                self.msgimg
-            )
-            feedItem.pack(fill="x", pady=(0, 5))
+        # for message in messages:
+        #     feedItem = FeedItemFrame(
+        #         contentFrame,
+        #         self.profileimg,
+        #         message,
+        #         self.like_images,
+        #         self.commentimg,
+        #         self.repostimg,
+        #         self.msgimg
+        #     )
+        #     feedItem.pack(fill="x", pady=(0, 5))
 
-            # 피드 구분 회색 선
-            border = tk.Frame(contentFrame, bg="#323232", height=1)
-            border.pack(fill="x", pady=10)
+        #     # 피드 구분 회색 선
+        #     border = tk.Frame(contentFrame, bg="#323232", height=1)
+        #     border.pack(fill="x", pady=10)
 
         controller.place_menu_bar(self, EnumMenuBar.HOME)
 
@@ -803,7 +815,7 @@ class Following_FeedPage(tk.Frame):
 
 # 각 게시글
 class FeedItemFrame(tk.Frame):
-    def __init__(self, parent, profile_img, message, like_images, comment_img, repost_img, msg_img):
+    def __init__(self, parent, profile_img_path, feed_data, like_images, comment_img, repost_img, msg_img):
         super().__init__(parent, bg="black")
         self.controller = parent
 
@@ -813,6 +825,8 @@ class FeedItemFrame(tk.Frame):
         self.repostimg = repost_img
         self.msgimg = msg_img
 
+        profile_img = ImageTk.PhotoImage(profile_img_path)
+
         # 왼쪽-오른쪽 구조
         leftFrame = tk.Frame(self, bg="black", width=50)
         leftFrame.pack(side="left", anchor="n", padx=10)
@@ -820,7 +834,8 @@ class FeedItemFrame(tk.Frame):
         rightFrame = tk.Frame(self, bg="black")
         rightFrame.pack(side="left", fill="x")
 
-        imgLabel = tk.Label(leftFrame, image=profile_img, bg="black")
+        imgLabel = tk.Label(leftFrame, image=profile_img)
+        # 프로필 이미지 띄우는 중 그러나 안됨 왜지?
         imgLabel.pack(anchor="n")
 
         contentArea = tk.Frame(rightFrame, bg="black")
@@ -830,11 +845,12 @@ class FeedItemFrame(tk.Frame):
         topInfo = tk.Frame(contentArea, bg="black")
         topInfo.pack(anchor="w", pady=(0, 2))
 
-        idLabel = tk.Label(topInfo, text=message["id"], fg="white", bg="black", font=("Arial", 11))
+        idLabel = tk.Label(topInfo, text=feed_data["id"], fg="white", bg="black", font=("Arial", 11))
         idLabel.pack(side="left")
 
         # 시간 계산
-        post_time = datetime.datetime.strptime(message["elapsed_time"], "%Y-%m-%d %H:%M:%S")
+        str_time = str(feed_data["writed_time"])
+        post_time = datetime.datetime.strptime(str_time, "%Y-%m-%d %H:%M:%S")
         now = datetime.datetime.now()
         diff = now - post_time
         if diff.days >= 1:
@@ -850,13 +866,13 @@ class FeedItemFrame(tk.Frame):
         timeLabel.pack(side="left", padx=(8, 0))
 
         # 게시글 내용
-        feedLabel = tk.Label(contentArea, text=message["feed"], fg="white", bg="black",
+        feedLabel = tk.Label(contentArea, text=feed_data["content"], fg="white", bg="black",
                              wraplength=400, justify="left", font=("맑은고딕", 11))
         feedLabel.pack(anchor="w", pady=(0, 10))
 
         # 게시글 이미지
-        if message["img"]:
-            self.post_img = ImageTk.PhotoImage(Image.open(message["img"]).resize((300, 300)))
+        if feed_data["image"] is not None and feed_data["image"] != b"None":
+            self.post_img = ImageTk.PhotoImage(Image.open(feed_data["image"]).resize((300, 300)))
             imgLabel = tk.Label(contentArea, image=self.post_img, bg="white")
             imgLabel.pack(anchor="w", pady=(0, 10))
 
@@ -868,13 +884,13 @@ class FeedItemFrame(tk.Frame):
                                  activebackground="black", command=self.toggle_like)
         self.likeBtn.pack(side="left")
 
-        likeCnt = tk.Label(btnFrame, text=message["like_cnt"], fg="white", bg="black")
+        likeCnt = tk.Label(btnFrame, text=feed_data["like_cnt"], fg="white", bg="black")
         likeCnt.pack(side="left", padx=(2, 20))
 
         commentBtn = tk.Button(btnFrame, image=self.commentimg, bd=0, background="black",
                                activebackground="black", command=self.show)
         commentBtn.pack(side="left")
-        commentCnt = tk.Label(btnFrame, text=message["comment_cnt"], fg="white", bg="black")
+        commentCnt = tk.Label(btnFrame, text=feed_data["comment_cnt"], fg="white", bg="black")
         commentCnt.pack(side="left", padx=(2, 15))
 
         repostBtn = tk.Button(btnFrame, image=self.repostimg, bd=0, background="black",
