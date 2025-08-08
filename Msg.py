@@ -19,6 +19,8 @@ class EnumMessageType:
     ADD_CHAT_ROOM = 14
     # 서버에서 동작을 구분할 수 있도록 타입을 추가해준다.
     UPDATE_PROFILE = 100
+    GET_CHAT_ROOM = 15
+    ADD_LIKE = 16
 
 class EnumMsgStatus:
     """
@@ -146,7 +148,7 @@ class Message:
         }
     
     @classmethod
-    def create_add_chatroom_msg(cls, user_id, chatroom_date):
+    def create_add_chatroom_msg(cls, user_id, user_id2, chatroom_date):
         """
         클라이언트 -> 서버  
         채팅방을 만든다.  
@@ -154,6 +156,7 @@ class Message:
         return {
             "type" : EnumMessageType.ADD_CHAT_ROOM,
             "user_id" : user_id,
+            "user_id2" : user_id2,
             "chatroom_date" : chatroom_date,
         }
     
@@ -208,6 +211,32 @@ class Message:
 
 
 
+    
+    @classmethod
+    def create_get_chatroom_list_msg(cls, user_id1, user_id2):
+        """
+        클라이언트 -> 서버  
+        user_id1과 user_id2로 생성된 채팅방이 있는지 확인한다.  
+        """
+        return {
+            "type" : EnumMessageType.GET_CHAT_ROOM,
+            "user_id1" : user_id1,
+            "user_id2" : user_id2,
+        }
+    
+    @classmethod
+    def create_add_like(cls, user_id, post_id):
+        """
+        클라이언트 -> 서버  
+        좋아요를 누른 user_id와 좋아요 대상의 post_id로 좋아요를 추가한다.  
+        """
+        return {
+            "type" : EnumMessageType.ADD_LIKE,
+            "user_id" : user_id,
+            "post_id" : post_id,
+        }
+    
+    
 
 class MessageData:
     """

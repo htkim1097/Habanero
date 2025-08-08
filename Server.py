@@ -104,6 +104,8 @@ class ThreadsServer:
             # 여기에 Msg.py에서 추가한 타입을 추가해준다.
             elif msg_type == EnumMessageType.UPDATE_PROFILE:
                 return self.handle_update_profile(msg)
+            elif msg_type == EnumMessageType.GET_CHAT_ROOM:
+                return self.handle_get_chatroom(msg)
             else:
                 raise Exception("[오류:handle_data] - 클라이언트로부터 받은 데이터의 type 값에 오류가 있습니다.")
             
@@ -327,10 +329,70 @@ class ThreadsServer:
     def handle_add_chatroom(self, msg):
         m_type = EnumMessageType.ADD_CHAT_ROOM
         try:
-            res = self.send_query(f"insert into chat_room values (null, '{msg["user_id"]}', '{msg["chatroom_date"]}');")
-            # lastrowid
-            print(res)
-            
+            res = self.send_query(f"insert into chat_room values (null, '{msg["user_id"]}', '{msg["user_id2"]}', '{msg["chatroom_date"]}');")
+
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.SUCCESS, 
+                data=""
+                )
+        
+        except Exception as e:
+            print(f"[오류:handle_add_chatroom]- {e}")
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.FAILED, 
+                message=e
+                )
+        
+    def handle_get_chatroom(self, msg):
+        m_type = EnumMessageType.GET_CHAT_ROOM
+        try:
+            query = """
+            SELECT * FROM chat_room 
+            WHERE (user_id = %s AND user_id2 = %s) 
+            OR (user_id = %s AND user_id2 = %s);
+            """
+            params = (
+                msg["user_id1"], 
+                msg["user_id2"], 
+                msg["user_id2"], 
+                msg["user_id1"]
+            )
+
+            res = self.send_query_safty(query=query, param=params)
+
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.SUCCESS, 
+                data=""
+                )
+        
+        except Exception as e:
+            print(f"[오류:handle_add_chatroom]- {e}")
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.FAILED, 
+                message=e
+                )
+        
+    def handle_add_like(self, msg):
+        m_type = EnumMessageType.ADD_LIKE
+        try:
+            query = """
+            SELECT * FROM chat_room 
+            WHERE (user_id = %s AND user_id2 = %s) 
+            OR (user_id = %s AND user_id2 = %s);
+            """
+            params = (
+                msg["user_id1"], 
+                msg["user_id2"], 
+                msg["user_id2"], 
+                msg["user_id1"]
+            )
+
+            res = self.send_query_safty(query=query, param=params)
+
             return Message.create_response_msg(
                 type=m_type,
                 status=EnumMsgStatus.SUCCESS, 
@@ -365,8 +427,10 @@ class ThreadsServer:
             )
 
 
+    @DeprecationWarning
     def send_query(self, query):
         """
+        sql 인젝션 위험. param을 추가한 send_query() 사용 권장.  
         DB에 연결하여 쿼리를 전송하고, 결과값을 수신한다.
         """
 
@@ -385,6 +449,34 @@ class ThreadsServer:
         cur.execute(query)
 
         res = cur.fetchall()
+
+        conn.close()
+
+        print(f"[DB 결과] - {res}")
+        return res
+    
+    def send_query_safty(self, query, param):
+        """
+        sql 인젝션 안전 버전  
+        DB에 연결하여 쿼리를 전송하고, 결과값을 수신한다.
+        """
+
+        conn = pymysql.connect(
+            host = self.db_address,
+            port = self.db_port,
+            user = self.db_user,
+            password = self.db_password,
+            charset = self.db_charset,
+            autocommit=True,
+            database = "threads_db"
+        )
+
+        cur = conn.cursor()
+        print(f"\n[쿼리]: {query}")
+        cur.execute(query, param)
+
+        res = cur.fetchall()
+
         conn.close()
 
         print(f"[DB 결과] - {res}")
