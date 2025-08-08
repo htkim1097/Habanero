@@ -177,7 +177,7 @@ class ThreadsServer:
         try:
             # parent_id가 없으면 게시글
             if msg['parent_id'] is None:
-                res = self.send_query(f"INSERT INTO post VALUES (null, \"{msg["content"]}\", \"{msg["img"]}\", \"{msg["id"]}\", \"{msg["post_time"]}\", null);")            
+                res = self.send_query(f"INSERT INTO post VALUES (null, \"{msg["content"]}\", \"{msg["img"]}\", \"{msg["id"]}\", \"{msg["post_time"]}\", null);")
             # parent_id가 있으면 댓글
             else:
                 res = self.send_query(f"INSERT INTO post VALUES (null, \"{msg["content"]}\", \"{msg["img"]}\", \"{msg["id"]}\", \"{msg["post_time"]}\", \"{msg["parent_id"]}\");")

@@ -525,16 +525,16 @@ class HomePage(tk.Frame):
         controller.place_menu_bar(self, EnumMenuBar.HOME)
 
     def show_frame(self):
-        self.tkraise()   
-        self.load_feed()  
+        self.tkraise()
+        self.load_feed()
 
     def load_feed(self):
         msg = Message.create_get_feed_msg(None)
         res = self.controller.request_db(msg)
 
         # 데이터 수신 예시
-        # { 'type': 4, 'status': 1, 'message': '', 'data': 
-        # {1: {'id': 'ht', 'content': '', 'image': None, 'like_cnt': '', 'comment_cnt': '', 'writed_time': datetime.datetime(2025, 8, 4, 12, 6, 3)}, 
+        # { 'type': 4, 'status': 1, 'message': '', 'data':
+        # {1: {'id': 'ht', 'content': '', 'image': None, 'like_cnt': '', 'comment_cnt': '', 'writed_time': datetime.datetime(2025, 8, 4, 12, 6, 3)},
         #  2: {'id': 'ht', 'content': '', 'image': None, 'like_cnt': 1, 'comment_cnt': 1, 'writed_time': datetime.datetime(2025, 8, 4, 12, 14, 5)},
         # }
 
@@ -569,6 +569,7 @@ class HomePage(tk.Frame):
             # 피드 구분 회색 선
             border = tk.Frame(self.contentFrame, bg="#323232", height=1)
             border.pack(fill="x", pady=10)
+
 
 # 마이 페이지 화면
 class MyPage(tk.Frame):

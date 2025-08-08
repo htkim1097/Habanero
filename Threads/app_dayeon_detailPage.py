@@ -109,6 +109,8 @@ class App(tk.Tk):
         self.add_frame(Following_FeedPage, self)
         self.add_frame(PostFeed, self) # 다연 추가
         self.add_frame(ActivityPage, self)
+        self.add_frame(PostDetailPage, self)
+
 
 
 
@@ -352,6 +354,14 @@ class App(tk.Tk):
         except Exception as e:
             print(f"[decode_image 오류] {e}")
             return None
+
+    # App (controller) 안에 추가
+    def open_post_detail(self, post_id, feed_data):
+        #page = self.controller.frames["PostDetailPage"]
+        #page.set_post(post_id, feed_data)  # 데이터 주입
+        #self.show_frame(PostDetailPage)  # 화면 전환
+        pass
+
 
 
 # 어플 실행 화면 - 시간 남으면..
@@ -705,7 +715,7 @@ class HomePage(tk.Frame):
         msg = Message.create_get_feed_msg(None)
         res = self.controller.request_db(msg)
 
-        for feed_data in res["data"].values():
+        for post_id, feed_data in res["data"].items():
             # 작성자의 프로필 이미지 받아오기
             msg = Message.create_get_userinfo_msg(feed_data["id"])
             user_info = self.controller.request_db(msg)
@@ -720,14 +730,16 @@ class HomePage(tk.Frame):
                 profile_img_path = Image.open(img_path + "noImageMan.png")
 
             feedItem = FeedItemFrame(
-                self.scrollable_frame,
-                self.controller,
-                profile_img_path,
-                feed_data,
-                self.like_images,
-                self.commentimg,
-                self.repostimg,
-                self.msgimg
+                parent=self.scrollable_frame,
+                controller=self.controller,
+                profile_img_path=profile_img_path,
+                feed_data=feed_data,
+                like_images=self.like_images,
+                comment_img=self.commentimg,
+                repost_img=self.repostimg,
+                msg_img=self.msgimg,
+                post_id=post_id
+
             )
             feedItem.pack(fill="x", pady=(0, 5))
             self.feed_items.append(feedItem)
@@ -738,15 +750,144 @@ class HomePage(tk.Frame):
             border.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
             border.pack(fill="x", pady=10)
 
+    # # App (controller) 안에 추가
+    # def open_post_detail(self, post_id, feed_data):
+    #     page = self.controller.frames["PostDetailPage"]
+    #     page.set_post(post_id, feed_data)  # 데이터 주입
+    #     self.controller.show_frame(PostDetailPage)  # 화면 전환
 
 
-# 피드에서 게시글 클릭 시 뜨는 페이지
-class TreadPage(tk.Frame):
+# 스레드 페이지
+class PostDetailPage(tk.Frame):
     def __init__(self, parent, controller):
-        super().__init__(parent)
+        super().__init__(parent, bg="black")
         self.controller = controller
+        self.post_id = None
+        self.post_data = None
+        self.post_img_ref = None
 
-        self.configure(bg="black")
+        # 헤더/뒤로 가기
+        back = tk.Button(self, text="← Back", command=lambda: self.controller.show_frame(HomePage))
+        back.pack(anchor="w", padx=10, pady=10)
+
+        # 본문 영역 (스크롤)
+        self.container = tk.Frame(self, bg="black")
+        self.container.pack(fill="both", expand=True)
+
+        self.canvas = tk.Canvas(self.container, bg="black", highlightthickness=0)
+        self.vbar = tk.Scrollbar(self.container, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.vbar.set)
+        self.vbar.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+        self.body = tk.Frame(self.canvas, bg="black")
+        self.win = self.canvas.create_window((0, 0), window=self.body, anchor="nw")
+        self.body.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+        self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfigure(self.win, width=e.width))
+
+        # 본문 위젯 자리(동적으로 갈아끼움)
+        self.title_lbl = tk.Label(self.body, text="", fg="white", bg="black", font=("Arial", 14, "bold"))
+        self.title_lbl.pack(anchor="w", padx=12, pady=(6,2))
+
+        self.content_lbl = tk.Label(self.body, text="", fg="white", bg="black",
+                                    wraplength=430, justify="left", font=("맑은고딕", 12))
+        self.content_lbl.pack(anchor="w", padx=12, pady=(0,10))
+
+        self.image_lbl = tk.Label(self.body, bg="black")
+        self.image_lbl.pack(anchor="w", padx=12, pady=(0,10))
+
+        sep = tk.Frame(self.body, bg="#323232", height=1)
+        sep.pack(fill="x", padx=8, pady=10)
+
+        # 댓글 목록 영역
+        self.comments_container = tk.Frame(self.body, bg="black")
+        self.comments_container.pack(fill="x", padx=8, pady=(0,10))
+
+        # 댓글 입력
+        entry_frame = tk.Frame(self, bg="black")
+        entry_frame.pack(fill="x", side="bottom")
+        self.comment_entry = tk.Entry(entry_frame, bg="#222", fg="white", insertbackground="white")
+        self.comment_entry.pack(side="left", fill="x", expand=True, padx=8, pady=8)
+        tk.Button(entry_frame, text="Send", command=self._send_comment).pack(side="right", padx=8, pady=8)
+
+
+    def set_post(self, post_id, feed_data):
+        """Home에서 호출: 상세 표시 데이터 주입"""
+        self.post_id = post_id
+        self.post_data = feed_data
+
+        # 제목/본문
+        self.title_lbl.config(text=feed_data["id"])
+        self.content_lbl.config(text=feed_data["content"])
+
+        # 이미지
+        self.image_lbl.config(image="")
+        self.post_img_ref = None
+        img_io = self.controller.decode_image(feed_data.get("image"))
+        if img_io:
+            img_io.seek(0)
+            pil = Image.open(img_io)
+            pil.thumbnail((430, 430))
+            self.post_img_ref = ImageTk.PhotoImage(pil)
+            self.image_lbl.config(image=self.post_img_ref)
+
+        # 댓글 로딩
+        self._load_comments()
+
+    def _load_comments(self):
+        """서버에서 post_id의 댓글 목록을 받아 렌더링"""
+        # TODO: 서버 API가 있으면 사용. 임시로 예시:
+        for w in self.comments_container.winfo_children():
+            w.destroy()
+
+        # 예시: 서버가 댓글 리스트 반환했다고 가정
+        # msg = Message.create_get_comments_msg(self.post_id)
+        # res = self.controller.request_db(msg)
+        # comments = res["data"]  # [(user, content, time), ...]
+
+        comments = []  # ← 서버 연동 전 임시 리스트
+        if not comments:
+            tk.Label(self.comments_container, text="No comments yet.", fg="gray", bg="black").pack(anchor="w")
+            return
+
+        for c in comments:
+            self._add_comment_item(c)
+
+    def _add_comment_item(self, c):
+        # c: dict or tuple
+        frame = tk.Frame(self.comments_container, bg="black")
+        frame.pack(fill="x", pady=6)
+        tk.Label(frame, text=c["user"], fg="#ddd", bg="black", font=("Arial", 10, "bold")).pack(anchor="w")
+        tk.Label(frame, text=c["content"], fg="white", bg="black", wraplength=430, justify="left").pack(anchor="w")
+
+    def _send_comment(self):
+        text = self.comment_entry.get().strip()
+        if not text:
+            return
+        # 서버로 전송(parent_id=self.post_id)
+        msg = Message.create_post_msg(
+            id=self.controller.get_user_id(),
+            content=text,
+            post_time=datetime.datetime.now(),
+            parent_id=self.post_id,     # ★ 댓글
+            image=b'None'
+        )
+        # 통신은 워커 스레드로
+        threading.Thread(target=self._send_comment_worker, args=(msg,), daemon=True).start()
+
+    def _send_comment_worker(self, msg):
+        try:
+            res = self.controller.request_db(msg)
+        except Exception as e:
+            res = {"status": 0, "message": str(e)}
+        self.after(0, self._after_send_comment, res)
+
+    def _after_send_comment(self, res):
+        if res and res.get("status") == 1:
+            self.comment_entry.delete(0, "end")
+            self._load_comments()  # 재로딩
+        else:
+            print("댓글 실패:", res)
 
 
 
@@ -804,7 +945,7 @@ class Following_FeedPage(tk.Frame):
         msg = Message.create_get_feed_msg(self.controller.get_user_id())
         res = self.controller.request_db(msg)
 
-        for feed_data in res["data"].values():
+        for post_id, feed_data in res["data"].items():
             # 작성자의 프로필 이미지 받아오기
             msg = Message.create_get_userinfo_msg(feed_data["id"])
             user_info = self.controller.request_db(msg)
@@ -831,7 +972,8 @@ class Following_FeedPage(tk.Frame):
                 like_images=self.like_images,
                 comment_img=self.commentimg,
                 repost_img=self.repostimg,
-                msg_img=self.msgimg
+                msg_img=self.msgimg,
+                post_id = post_id,
             )
             feedItem.pack(fill="x", pady=(0, 5))
 
@@ -842,11 +984,12 @@ class Following_FeedPage(tk.Frame):
 
 # 각 게시글
 class FeedItemFrame(tk.Frame):
-    def __init__(self, parent, controller, profile_img_path, feed_data, like_images, comment_img, repost_img, msg_img):
+    def __init__(self, parent, post_id, controller, profile_img_path, feed_data, like_images, comment_img, repost_img, msg_img):
         super().__init__(parent, bg="black")
         #self.controller = parent
         self.controller = controller
         self.feed_data = feed_data
+        self.post_id = post_id
 
         self.like_state = 0
         self.like_images = like_images
@@ -965,6 +1108,30 @@ class FeedItemFrame(tk.Frame):
         msgBtn = tk.Button(btnFrame, image=self.msgimg, bd=0, background="black",
                            activebackground="black", command=self.show)
         msgBtn.pack(side="left")
+
+        # === 클릭 타겟들 ===
+        # 카드 전체
+        self.bind("<Button-1>", self.on_open_detail)
+        # 주요 영역에도 바인딩(라벨 클릭 시에도 동작하도록)
+        imgLabel.bind("<Button-1>", self.on_open_detail)
+        contentArea.bind("<Button-1>", self.on_open_detail)
+        topInfo.bind("<Button-1>", self.on_open_detail)
+        idLabel.bind("<Button-1>", self.on_open_detail)
+        timeLabel.bind("<Button-1>", self.on_open_detail)
+        feedLabel.bind("<Button-1>", self.on_open_detail)
+
+        # 마우스 올렸을 때 손가락 커서로
+        for w in (self, imgLabel, contentArea, topInfo, idLabel, timeLabel, feedLabel):
+            w.configure(cursor="hand2")
+
+        # 댓글 버튼은 상세로 들어가도록 해도 됨(선택)
+        commentBtn.config(command=self.on_open_detail)
+
+    def on_open_detail(self, event=None):
+        # 상세 페이지로 전환 요청
+        self.controller.open_post_detail(self.post_id, self.feed_data)
+    # ============================
+
 
     def toggle_like(self):
         # 상태 토글
