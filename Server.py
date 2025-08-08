@@ -407,25 +407,64 @@ class ThreadsServer:
                 message=e
                 )
 
-    def handle_update_profile(self, msg):
-        m_type = EnumMessageType.UPDATE_PROFILE
-
-        try:
-            res = self.send_query(f"insert into chat_room values (null, '{msg["user_id"]}', '{msg["chatroom_date"]}');")
-            return Message.create_response_msg(
-                type=m_type,
-                status=EnumMsgStatus.SUCCESS,
-                data=""
-            )
-
-        except Exception as e:
-            print(f"[오류:handle_add_chatroom]- {e}")
-            return Message.create_response_msg(
-                type=m_type,
-                status=EnumMsgStatus.FAILED,
-                message=e
-            )
-
+    # def handle_update_profile(self, msg):
+    #     m_type = EnumMessageType.UPDATE_PROFILE
+    #
+    #     try:
+    #         if msg["user_name"] is not None or msg["user_name"] != "":
+    #
+    #
+    #         query = """
+    #         update user set name = %s
+    #         """
+    #         params = (
+    #             msg["user_name"],
+    #             msg["profile_image"],
+    #         )
+    #
+    #         res = self.send_query_safty(query=query, param=params)
+    #
+    #         return Message.create_response_msg(
+    #             type=m_type,
+    #             status=EnumMsgStatus.SUCCESS,
+    #             data=""
+    #         )
+    #
+    #     except Exception as e:
+    #         print(f"[오류:handle_add_chatroom]- {e}")
+    #         return Message.create_response_msg(
+    #             type=m_type,
+    #             status=EnumMsgStatus.FAILED,
+    #             message=e
+    #         )
+    #
+    # def sample(self, msg):
+    #     #m_type = EnumMessageType.추가한 타입 넣기
+    #
+    #     try:
+    #         query = """
+    #
+    #         """
+    #         params = (
+    #             msg["속성 명 1"],
+    #             msg["속성 명 2"],
+    #         )
+    #
+    #         res = self.send_query_safty(query=query, param=params)
+    #
+    #         return Message.create_response_msg(
+    #             #type=m_type,  # 위에서 m_type 수정 후 주석 풀어주기
+    #             status=EnumMsgStatus.SUCCESS,
+    #             data=""  # 클라이언트에 보내줄 데이터가 있을 때, MessageData Class에서 데이터 정의 후 보내준다.
+    #         )
+    #
+    #     except Exception as e:
+    #         print(f"[오류: 함수이름 ]- {e}")
+    #         return Message.create_response_msg(
+    #             #type=m_type,  # 위에서 m_type 수정 후 주석 풀어주기
+    #             status=EnumMsgStatus.FAILED,
+    #             message=e
+    #         )
 
     @DeprecationWarning
     def send_query(self, query):
