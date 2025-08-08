@@ -1,4 +1,6 @@
 # App.py
+import threading
+import time
 import tkinter as tk
 from tkinter import ttk, font
 from PIL import ImageTk, Image, ImageDraw
@@ -108,8 +110,7 @@ class App(tk.Tk):
         self.add_frame(Following_FeedPage, self)
         self.add_frame(PostFeed, self)
         self.add_frame(ActivityPage, self)
-
-
+        self.add_frame(ChatRoomPage, self)
 
         # 첫 화면
         self.show_frame(MsgFriendsPage)
@@ -125,12 +126,15 @@ class App(tk.Tk):
         self.frames[page_name] = frame
         frame.place(x=0, y=0, relwidth=1, relheight=1)
 
-    def show_frame(self, Frame):
+    def show_frame(self, Frame, data=None):
         """
         등록된 page_name의 frame을 화면에 띄운다.
         """
         frame = self.frames[Frame.__name__]
-        frame.show_frame()
+        if data is not None:
+            frame.show_frame(data)
+        else:
+            frame.show_frame()
 
     def on_entry_click(self, entry, string):
         """
@@ -1016,7 +1020,7 @@ class PostFeed(tk.Frame):
         # 게시글 작성
         self.textEntry = tk.Text(contentArea,bd=0, height="5", bg="black", fg="gray", font=("Arial", 16), insertbackground="gray")
         self.textEntry.pack(side="left")
-        self.textEntry.insert(1.0, "What's new?")
+        self.textEntry.insert(1.0, "What's new?")     
         self.click_count = 0
         self.textEntry.bind('<Button-1>', lambda e: self.controller.on_Text_click(self.textEntry, "What's new?"))
         #textEntry.bind('<Button-1>', lambda e: self.controller.on_Text_click(textEntry, self.click_count))
@@ -1041,7 +1045,7 @@ class PostFeed(tk.Frame):
         postBtn = tk.Button(btnFrame, image=self.postImg, bd=0, background="black", activebackground="black", command=self.update_user_info)
         postBtn.pack(padx=(200,0))
 
-        controller.place_menu_bar(self, EnumMenuBar.HOME)
+        controller.place_menu_bar(self, None)
 
     # 클라이언트에서 이미지 변환
     # image_path = "path/to/your/image.jpg"
@@ -1058,7 +1062,7 @@ class PostFeed(tk.Frame):
     # image_bytes = base64.b64decode(image_base64)
     # data_io = io.BytesIO(data[0][0])
     # img = Image.open(data_io)
-
+    
     def open_Img_File(self):
         file_path = filedialog.askopenfilename(
             title="파일 선택",
@@ -1230,6 +1234,8 @@ class MsgFriendsPage(tk.Frame):
         self.controller.show_frame(MessagesPage)
 
     def load_friends(self):
+        self.selected_friend = None
+
         msg = Message.create_get_follows_msg(self.controller.get_user_id())
         res = self.controller.request_db(msg)
 
@@ -1283,14 +1289,24 @@ class MsgFriendsPage(tk.Frame):
 
     def chat(self):
         # 기존 채팅방이 존재하는지 확인
-        msg = Message.create_get_chatroom_list_msg
-        now = datetime.datetime.now()
-        msg = Message.create_add_chatroom_msg(self.controller.get_user_id(), now) 
+        msg = Message.create_get_chatroom_list_msg(self.controller.get_user_id(), self.selected_friend)
         res = self.controller.request_db(msg)
-        # print("ddddddddddd", res)
 
-        # chatRoom = ChatRoomPage(self, self.controller, res["data"])
-        # chatRoom.show_frame()
+        print(2, res["data"])
+
+        # 채팅 방이 없다면 채팅 방을 생성한다.
+        if not res["data"]:
+            now = datetime.datetime.now()
+            msg = Message.create_add_chatroom_msg(self.controller.get_user_id(), self.selected_friend, now) 
+            chatroom_data = self.controller.request_db(msg)
+            chatroom_data = chatroom_data["data"]
+            print(3, chatroom_data)
+
+        # 채팅 방이 있다면 기존 채팅 방의 정보를 불러온다.
+        else:
+            chatroom_data = res["data"][0]
+
+        self.controller.show_frame(ChatRoomPage, chatroom_data)
 
 # 친구 목록 아이템
 class FriendFrame(tk.Frame):
@@ -1327,10 +1343,18 @@ class FriendFrame(tk.Frame):
 
 # 채팅방
 class ChatRoomPage(tk.Frame):
-    def __init__(self, parent, controller, chatroom_id):
+    def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
         self.parent = parent
+        self.chatroom_id = None
+        self.chat_user1 = None
+        self.chat_user2 = None
+        self.created_date = None
+        self.isOnFrame = False
+        self.chat_update_interval = 3
+        self.message_list = []
+        self.last_message_time = ""
 
         # 메시지를 불러와서 메시지 작성자가 나이면 오른쪽에 아니면 왼쪽에
         # 메시지 작성자의 첫 메시지 옆에 프로필 아이콘 띄우기
@@ -1349,19 +1373,20 @@ class ChatRoomPage(tk.Frame):
         self.message_bar.place(x=70, y=850)
         self.message_bar_font = tk.font.Font(size=14)
 
+        # 채팅 바
         self.message_bar_entry = tk.Entry(self, bd=0, fg="white", background="#1e1e1e", font=self.message_bar_font)
         self.message_bar_entry.place(x=85, y=870, width=350)
         self.message_bar_entry.insert(0, self.msg_default_text)
         self.message_bar_entry.bind('<Button-1>', lambda e: self.controller.on_entry_click(self.message_bar_entry, self.msg_default_text))
         self.message_bar_entry.bind('<FocusOut>', lambda e: self.controller.on_focusout(self.message_bar_entry, self.msg_default_text))
-        self.message_bar_entry.bind('<Return>', lambda e: self.send_text)
+        self.message_bar_entry.bind('<Return>', lambda e: self.send_text())
 
         # 파일 추가 버튼
         new_message_btn = tk.Button(self, image=self.add_file_img, activebackground="black", bd=0, background="black" ,relief="flat", highlightthickness=0, command=lambda: self.send_text())
         new_message_btn.place(x=10, y=850)
 
         # 이전 버튼
-        new_message_btn = tk.Button(self, image=self.back_img, activebackground="black", bd=0, background="black" ,relief="flat", highlightthickness=0, command=lambda: self.controller.show_frame(MsgFriendsPage))
+        new_message_btn = tk.Button(self, image=self.back_img, activebackground="black", bd=0, background="black" ,relief="flat", highlightthickness=0, command=lambda: self.move_back())
         new_message_btn.place(x=20, y=40)
 
         # 메시지 리스트
@@ -1375,9 +1400,10 @@ class ChatRoomPage(tk.Frame):
         self.canvas.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
 
         # 캔버스에 스크롤 가능한 프레임 넣기
-        self.scrollable_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.scrollable_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw", width=self.controller.app_width, height=740)
 
         self.scrollable_frame.bind("<Configure>", self.on_configure)
+        self.scrollable_frame.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
         self.canvas.pack(side="left", fill="both", expand=True)
 
     def on_configure(self, event):
@@ -1386,25 +1412,74 @@ class ChatRoomPage(tk.Frame):
         """
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
-    def show_frame(self):
+    def show_frame(self, chatroom_data):
+        self.chatroom_id = chatroom_data["chatroom_id"]
+        self.chat_user1 = chatroom_data["user_id1"]
+        self.chat_user2 = chatroom_data["user_id2"]
+        self.created_date = chatroom_data["chatroom_date"]
+    
         self.tkraise() 
-        self.load_chat_data()   # 비동기 실행 필요
+
+        self.isOnFrame = True
+
+        self.chat_thread = threading.Thread(target=self.load_chat_data)
+        self.chat_thread.daemon = True
+        self.chat_thread.start()
+
+    def move_back(self):
+        self.isOnFrame = False
+        self.controller.show_frame(MsgFriendsPage)
 
     def load_chat_data(self):
-        msg = Message.create_get_chat_data_msg(self.controller.get_user_id())
-        res = self.controller.request_db(msg)
+        print(f"[초기 메시지 갱신] - {datetime.datetime.now()}  {self.chat_user1} : {self.chat_user2}")
 
-        if res["status"]:
-            for message in res["data"]:
-                frame = self.create_msg_frame(self.scrollable_frame, message["user_id"], message["content"], message["image"], message["message_time"])
-                self.bind_mousewheel_recursive(frame)
-        #pass
+        init_msgs = self.controller.request_db(Message.create_get_chat_data_msg(self.chatroom_id, ""))
+
+        if init_msgs["data"]:
+            for msg in init_msgs["data"]:
+                print("메시지: ", msg["content"])
+                # 메시지 말풍선 gui 생성 후 도시하기
+                self.create_msg_frame(self.scrollable_frame, msg["user_id"], msg["content"], msg["image"], msg["message_time"])
+
+            # 마지막으로 업데이트한 메시지 시간을 저장
+            self.last_message_time = init_msgs["data"][-1]["message_time"]
+
+        while self.isOnFrame:
+            # 마지막 업데이트 메시지 시간을 포함하여 get_chat_data 요청 보내기
+            msgs = self.controller.request_db(Message.create_get_chat_data_msg(self.chatroom_id, self.last_message_time))
+
+            print(msgs["data"])
+
+            # 갱신할 메시지가 있다면 메시지 말풍선 gui 생성 후 도시하기
+            if msgs["data"]:
+                for msg in msgs["data"]:
+                    # 메시지 말풍선 gui 생성 후 도시하기
+                    self.create_msg_frame(self.scrollable_frame, msg["user_id"], msg["content"], msg["image"], msg["message_time"])
+
+                # 마지막으로 업데이트한 메시지 시간을 저장
+                self.last_message_time = msgs["data"][-1]["message_time"]
+
+            time.sleep(self.chat_update_interval)
 
     def send_text(self):
+        """
+        메시지 전송하기
+        """
         text = self.message_bar_entry.get()
-        MessageData.create_msg_data(self.controller.get_user_id(), )
-        Message.create_add_chat_msg
-        
+
+        # 메시지를 작성했다면
+        if text != self.msg_default_text and text:
+            # 메시지 데이터 정의 후 메시지 전송하기
+            data = MessageData.create_msg_data(
+                user_id=self.controller.get_user_id(), 
+                chatroom_id=self.chatroom_id, 
+                content=text,
+                image="",
+                message_time=datetime.datetime.now())
+            msg = Message.create_add_chat_msg(self.chatroom_id, data)
+            res = self.controller.request_db(msg)
+            self.message_bar_entry.delete(0, tk.END)
+            self.message_bar_entry.insert(0, self.msg_default_text)
 
     def send_image(self):
         img_path = filedialog.askopenfile()
@@ -1418,36 +1493,79 @@ class ChatRoomPage(tk.Frame):
         self.canvas.yview_scroll(int((event.delta / 120)), "units")
 
     def create_msg_frame(self, parent, user_id, content, image, message_time):
-        msg_frame = tk.Frame(parent, bg="gray", bd=1, relief="solid")
+        is_mine = (self.controller.get_user_id() == user_id)
+        bg_color = "#2f2f2f"
+        text_color = "white"
+        font = ("Arial", 12)
+        time_font = ("Arial", 8)
 
-        # 내 메시지일 때
-        if self.controller.get_user_id() == user_id:
-            # 오른쪽 위치
-            pass
+        # 말풍선 프레임
+        wrapper_frame = tk.Frame(parent, bg="black")
+        wrapper_frame.pack(fill="x", pady=5, padx=10, anchor="e" if is_mine else "w")
+
+        # 프로필 이미지 (상대방만 표시)
+        if not is_mine:
+            profile_img = tk.Label(wrapper_frame, image=self.friend_profile_img, bg="black")
+            profile_img.pack(side="left", padx=5)
+
+        # 메시지 박스
+        msg_bubble = tk.Frame(wrapper_frame, bg=bg_color, padx=10, pady=5)
+        msg_bubble.pack(side="right" if is_mine else "left", padx=5)
+
+        if image:
+            try:
+                img = Image.open(image)
+                img.thumbnail((200, 200))
+                tk_img = ImageTk.PhotoImage(img)
+                img_label = tk.Label(msg_bubble, image=tk_img, bg=bg_color)
+                img_label.image = tk_img  # 참조 유지
+                img_label.pack()
+            except Exception as e:
+                print("이미지 로딩 오류:", e)
         else:
-            # 왼쪽 위치
-            pass
+            text_label = tk.Label(msg_bubble, text=content, font=font, fg=text_color, bg=bg_color, wraplength=250, justify="left")
+            text_label.pack()
 
-        # 텍스트 메시지일 때
-        if image is None:
-            # content 
-            pass
-        else:
-            # image
-            pass
+        # 시간 표시
+        time_label = tk.Label(wrapper_frame, text=str(message_time)[-8:-3], font=time_font, fg="gray", bg="black")
+        time_label.pack(anchor="e" if is_mine else "w", padx=5)
 
-        message_font = ("Arial", 10)
-        message_box = tk.Frame(msg_frame, bg="gray")
-        message_box.pack(side="left", padx=10, pady=5)
+        # 스크롤 하단 고정
+        self.canvas.update_idletasks()
+        self.canvas.yview_moveto(1.0)
 
-        text_lable = tk.Label(msg_frame, text="qweqwe", font=message_font, fg="white")
-        img_label = tk.Label(msg_frame, font=message_font)
+    # def create_msg_frame(self, parent, user_id, content, image, message_time):
+    #     msg_frame = tk.Frame(parent, bg="gray", bd=1, relief="solid")
 
-        text_lable.pack(fill="both", expand=True)
-        img_label.pack(fill="both", expand=True)
-        msg_frame.pack(fill="x", pady=2, padx=5)
+    #     # 내 메시지일 때
+    #     if self.controller.get_user_id() == user_id:
+    #         # 오른쪽 위치
+    #         print("내가 보낸 글입니다.")
+    #     else:
+    #         # 왼쪽 위치
+    #         print("상대가 보낸 글입니다.")
+
+    #     # 텍스트 메시지일 때
+    #     if image is None:
+    #         # content 
+    #         print("텍스트 메시지 입니다.")
+    #     else:
+    #         # image
+    #         print("이미지 메시지 입니다.")
+            
+
+    #     message_font = ("Arial", 10)
+    #     message_box = tk.Frame(msg_frame, bg="gray")
+    #     message_box.pack(side="left", padx=10, pady=5)
+
+    #     text_lable = tk.Label(msg_frame, text="qweqwe", font=message_font, fg="white")
+    #     img_label = tk.Label(msg_frame, font=message_font)
+
+    #     text_lable.pack(fill="both", expand=True)
+    #     img_label.pack(fill="both", expand=True)
+    #     msg_frame.pack(fill="x", pady=2, padx=5)
         
-        return msg_frame
+    #     return msg_frame
 
     def bind_mousewheel_recursive(self, widget):
         widget.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))

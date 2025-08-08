@@ -106,6 +106,11 @@ class ThreadsServer:
                 return self.handle_update_profile(msg)
             elif msg_type == EnumMessageType.GET_CHAT_ROOM:
                 return self.handle_get_chatroom(msg)
+            elif msg_type == EnumMessageType.GET_CHAT_DATA:
+                return self.handle_get_chat_data(msg)
+            elif msg_type == EnumMessageType.ADD_CHAT_DATA:
+                return self.handle_add_chat_data(msg)
+            
             else:
                 raise Exception("[오류:handle_data] - 클라이언트로부터 받은 데이터의 type 값에 오류가 있습니다.")
             
@@ -177,10 +182,10 @@ class ThreadsServer:
         try:
             # parent_id가 없으면 게시글
             if msg['parent_id'] is None:
-                res = self.send_query(f"INSERT INTO post VALUES (null, \"{msg["content"]}\", \"{msg["img"]}\", \"{msg["id"]}\", \"{msg["post_time"]}\", null);")            
+                res = self.send_query(f"INSERT INTO post VALUES (null, \"{msg["content"]}\", \"{msg["image"]}\", \"{msg["id"]}\", \"{msg["post_time"]}\", null);")            
             # parent_id가 있으면 댓글
             else:
-                res = self.send_query(f"INSERT INTO post VALUES (null, \"{msg["content"]}\", \"{msg["img"]}\", \"{msg["id"]}\", \"{msg["post_time"]}\", \"{msg["parent_id"]}\");")
+                res = self.send_query(f"INSERT INTO post VALUES (null, \"{msg["content"]}\", \"{msg["image"]}\", \"{msg["id"]}\", \"{msg["post_time"]}\", \"{msg["parent_id"]}\");")
 
             return Message.create_response_msg(
                 type=m_type,
@@ -329,12 +334,42 @@ class ThreadsServer:
     def handle_add_chatroom(self, msg):
         m_type = EnumMessageType.ADD_CHAT_ROOM
         try:
-            res = self.send_query(f"insert into chat_room values (null, '{msg["user_id"]}', '{msg["user_id2"]}', '{msg["chatroom_date"]}');")
+            query="""
+            insert into chat_room 
+            values (null, %s, %s, %s);
+            """
+            params = (
+                msg["user_id"], 
+                msg["user_id2"], 
+                msg["chatroom_date"]
+            )
+
+            self.send_query_safty(query=query, param=params)
+
+            # 추가한 chat_room의 id를 불러온다.
+            query = """
+            SELECT * FROM chat_room 
+            WHERE (user_id = %s AND user_id2 = %s) 
+            OR (user_id = %s AND user_id2 = %s);
+            """
+            params = (
+                msg["user_id"], 
+                msg["user_id2"], 
+                msg["user_id2"], 
+                msg["user_id"]
+            )
+
+            chat_room_data = self.send_query_safty(query=query, param=params)
 
             return Message.create_response_msg(
                 type=m_type,
                 status=EnumMsgStatus.SUCCESS, 
-                data=""
+                data=MessageData.create_chatroom_data(
+                    chatroom_id=chat_room_data[0][0],
+                    user_id1=chat_room_data[0][1],
+                    user_id2=chat_room_data[0][2],
+                    chatroom_date=chat_room_data[0][3]
+                )
                 )
         
         except Exception as e:
@@ -346,6 +381,9 @@ class ThreadsServer:
                 )
         
     def handle_get_chatroom(self, msg):
+        """
+        user_id1과 user_id2로 이뤄진 chatroom 정보를 받아온다.  
+        """
         m_type = EnumMessageType.GET_CHAT_ROOM
         try:
             query = """
@@ -360,16 +398,28 @@ class ThreadsServer:
                 msg["user_id1"]
             )
 
-            res = self.send_query_safty(query=query, param=params)
+            chatroom_datas = self.send_query_safty(query=query, param=params)
+            
+            # 채팅방 데이터 리스트
+            datas = []
 
+            for chatroom in chatroom_datas:
+                data = MessageData.create_chatroom_data(
+                    chatroom_id=chatroom[0],
+                    user_id1=chatroom[1],
+                    user_id2=chatroom[2],
+                    chatroom_date=chatroom[3]
+                )
+                datas.append(data)
+            
             return Message.create_response_msg(
                 type=m_type,
                 status=EnumMsgStatus.SUCCESS, 
-                data=""
+                data=datas
                 )
         
         except Exception as e:
-            print(f"[오류:handle_add_chatroom]- {e}")
+            print(f"[오류:handle_get_chatroom]- {e}")
             return Message.create_response_msg(
                 type=m_type,
                 status=EnumMsgStatus.FAILED, 
@@ -406,38 +456,123 @@ class ThreadsServer:
                 status=EnumMsgStatus.FAILED, 
                 message=e
                 )
+        
+    def handle_get_chat_data(self, msg):
+        m_type = EnumMessageType.GET_CHAT_DATA
+        try:
+            # 마지막 채팅 시간을 줬다면 그 이후 추가된 채팅만 불러오기
+            if msg["last_chat_time"]:
+                query = """
+                SELECT * FROM message 
+                WHERE chatroom_id = %s AND message_time > %s;
+                """
+                params = (
+                    msg["chatroom_id"],
+                    msg["last_chat_time"]
+                )
+            # 마지막 채팅 시간이 없다면 모든 채팅 기록을 불러오기
+            else:
+                query = """
+                SELECT * FROM message 
+                WHERE chatroom_id = %s;
+                """
+                params = (
+                    msg["chatroom_id"],
+                )
 
-    # def handle_update_profile(self, msg):
-    #     m_type = EnumMessageType.UPDATE_PROFILE
-    #
-    #     try:
-    #         if msg["user_name"] is not None or msg["user_name"] != "":
-    #
-    #
-    #         query = """
-    #         update user set name = %s
-    #         """
-    #         params = (
-    #             msg["user_name"],
-    #             msg["profile_image"],
-    #         )
-    #
-    #         res = self.send_query_safty(query=query, param=params)
-    #
-    #         return Message.create_response_msg(
-    #             type=m_type,
-    #             status=EnumMsgStatus.SUCCESS,
-    #             data=""
-    #         )
-    #
-    #     except Exception as e:
-    #         print(f"[오류:handle_add_chatroom]- {e}")
-    #         return Message.create_response_msg(
-    #             type=m_type,
-    #             status=EnumMsgStatus.FAILED,
-    #             message=e
-    #         )
-    #
+            msgs = self.send_query_safty(query=query, param=params)
+
+            datas = []
+            for msg in msgs:
+                data = MessageData.create_msg_data(
+                    user_id=msg[1],
+                    chatroom_id=msg[2],
+                    content=msg[3],
+                    message_time=msg[4],
+                )
+                datas.append(data)
+
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.SUCCESS, 
+                data=datas
+                )
+        
+        except Exception as e:
+            print(f"[오류:handle_add_chatroom]- {e}")
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.FAILED, 
+                message=e
+                )
+
+    def handle_add_chat_data(self, msg):
+        m_type = EnumMessageType.ADD_CHAT_DATA
+        try:
+            query = """
+            insert into message values (null, %s, %s, %s, %s, %s);
+            """
+            params = (
+                msg["data"]["user_id"],
+                msg["data"]["chatroom_id"],
+                msg["data"]["content"],
+                msg["data"]["message_time"],
+                msg["data"]["image"],
+            )
+
+            res = self.send_query_safty(query=query, param=params)
+
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.SUCCESS, 
+                data=""
+                )
+        
+        except Exception as e:
+            print(f"[오류:handle_add_chatroom]- {e}")
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.FAILED, 
+                message=e
+                )
+        
+    def handle_update_profile(self, msg):
+        m_type = EnumMessageType.UPDATE_PROFILE
+    
+        try:
+            if msg["user_name"]:
+                query = """
+                update user set name = %s where user_id = %s;
+                """
+                params = (
+                    msg["user_name"],
+                    msg["user_id"],
+                )
+            elif msg["profile_image"]:
+                query = """
+                update user set profile_image = %s where user_id = %s;
+                """
+                params = (
+                    msg["profile_image"],
+                    msg["user_id"],
+                )
+    
+            res = self.send_query_safty(query=query, param=params)
+    
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.SUCCESS,
+                data=""
+            )
+    
+        except Exception as e:
+            print(f"[오류:handle_add_chatroom]- {e}")
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.FAILED,
+                message=e
+            )
+    
     # def sample(self, msg):
     #     #m_type = EnumMessageType.추가한 타입 넣기
     #
@@ -466,7 +601,6 @@ class ThreadsServer:
     #             message=e
     #         )
 
-    @DeprecationWarning
     def send_query(self, query):
         """
         sql 인젝션 위험. param을 추가한 send_query() 사용 권장.  
@@ -526,7 +660,6 @@ class ThreadsServer:
         서버 종료에 필요한 절차들을 실행한다.
         """
         pass
-
 
 if __name__ == "__main__":
     server = ThreadsServer()

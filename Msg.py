@@ -14,12 +14,11 @@ class EnumMessageType:
     GET_POST_IMG = 9
     FOLLOWING = 10
     GET_USER_INFO = 11
-    GET_MSG_DATA = 12
-    ADD_MST_DATA = 13
+    GET_CHAT_DATA = 12
+    ADD_CHAT_DATA = 13
     ADD_CHAT_ROOM = 14
     # 서버에서 동작을 구분할 수 있도록 타입을 추가해준다.
     UPDATE_PROFILE = 100
-    GET_CHAT_ROOM = 15
     ADD_LIKE = 16
 
 class EnumMsgStatus:
@@ -77,7 +76,7 @@ class Message:
         }
     
     @classmethod
-    def create_post_msg(cls, id, content, post_time, parent_id, location=""):
+    def create_post_msg(cls, id, content, post_time, parent_id):
         """
         클라이언트 -> 서버  
         게시물 작성 메시지를 생성한다.  
@@ -88,7 +87,6 @@ class Message:
             "content" : content,
             "post_time" : post_time,
             "parent_id" : parent_id,
-            "location" : location,
         }
     
     @classmethod
@@ -161,14 +159,15 @@ class Message:
         }
     
     @classmethod
-    def create_get_chat_data_msg(cls, chatroom_id):
+    def create_get_chat_data_msg(cls, chatroom_id, last_chat_time):
         """
         클라이언트 -> 서버  
         to_user_id와 채팅한 메시지 데이터들을 받아온다.  
         """
         return {
-            "type" : EnumMessageType.GET_MSG_DATA,
+            "type" : EnumMessageType.GET_CHAT_DATA,
             "chatroom_id" : chatroom_id,
+            "last_chat_time" : last_chat_time,
         }
     
     @classmethod
@@ -178,7 +177,7 @@ class Message:
         chatroom_id의 채팅방에서 입력된 data를 저장하도록 요청한다.  
         """
         return {
-            "type" : EnumMessageType.ADD_MST_DATA,
+            "type" : EnumMessageType.ADD_CHAT_DATA,
             "chatroom_id" : chatroom_id,
             "data" : data
         }
@@ -196,22 +195,6 @@ class Message:
             "profile_image" : profile_image,
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
     @classmethod
     def create_get_chatroom_list_msg(cls, user_id1, user_id2):
         """
@@ -291,6 +274,18 @@ class MessageData:
             "content" : content,
             "message_time" : message_time,
             "image" : image,
+        }
+    
+    @classmethod
+    def create_chatroom_data(cls, chatroom_id, user_id1, user_id2, chatroom_date):
+        """
+        채팅 방 데이터  
+        """
+        return {
+            "chatroom_id" : chatroom_id,
+            "user_id1" : user_id1,
+            "user_id2" : user_id2,
+            "chatroom_date" : chatroom_date
         }
     
 if __name__ == "__main__":
