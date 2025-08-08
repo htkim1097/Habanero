@@ -101,6 +101,9 @@ class ThreadsServer:
                 return self.handle_get_userinfo(msg)
             elif msg_type == EnumMessageType.ADD_CHAT_ROOM:
                 return self.handle_add_chatroom(msg)
+            # 여기에 Msg.py에서 추가한 타입을 추가해준다.
+            elif msg_type == EnumMessageType.UPDATE_PROFILE:
+                return self.handle_update_profile(msg)
             else:
                 raise Exception("[오류:handle_data] - 클라이언트로부터 받은 데이터의 type 값에 오류가 있습니다.")
             
@@ -341,6 +344,26 @@ class ThreadsServer:
                 status=EnumMsgStatus.FAILED, 
                 message=e
                 )
+
+    def handle_update_profile(self, msg):
+        m_type = EnumMessageType.UPDATE_PROFILE
+
+        try:
+            res = self.send_query(f"insert into chat_room values (null, '{msg["user_id"]}', '{msg["chatroom_date"]}');")
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.SUCCESS,
+                data=""
+            )
+
+        except Exception as e:
+            print(f"[오류:handle_add_chatroom]- {e}")
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.FAILED,
+                message=e
+            )
+
 
     def send_query(self, query):
         """

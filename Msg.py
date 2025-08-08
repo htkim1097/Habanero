@@ -17,6 +17,8 @@ class EnumMessageType:
     GET_MSG_DATA = 12
     ADD_MST_DATA = 13
     ADD_CHAT_ROOM = 14
+    # 서버에서 동작을 구분할 수 있도록 타입을 추가해준다.
+    UPDATE_PROFILE = 100
 
 class EnumMsgStatus:
     """
@@ -178,7 +180,35 @@ class Message:
             "data" : data
         }
 
-    
+    @classmethod
+    def create_update_profile(cls, user_id, user_name, profile_image):
+        """
+        클라이언트 -> 서버
+
+        """
+        return {
+            "type" : EnumMessageType.UPDATE_PROFILE,
+            "user_id" : user_id,
+            "user_name" : user_name,
+            "profile_image" : profile_image,
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class MessageData:
     """
     메시지 데이터를 생성하는 메서드의 집합 클래스
