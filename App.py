@@ -1282,9 +1282,11 @@ class MsgFriendsPage(tk.Frame):
             frame.configure(highlightthickness=0)
 
     def chat(self):
+        # 기존 채팅방이 존재하는지 확인
+        msg = Message.create_get_chatroom_list_msg
         now = datetime.datetime.now()
-        msg = Message.create_add_chatroom_msg(self.controller.get_user_id(), now)
-        # res = self.controller.request_db(msg)
+        msg = Message.create_add_chatroom_msg(self.controller.get_user_id(), now) 
+        res = self.controller.request_db(msg)
         # print("ddddddddddd", res)
 
         # chatRoom = ChatRoomPage(self, self.controller, res["data"])
