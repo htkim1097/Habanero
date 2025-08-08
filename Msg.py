@@ -76,7 +76,7 @@ class Message:
         }
     
     @classmethod
-    def create_post_msg(cls, id, content, post_time, parent_id):
+    def create_post_msg(cls, id, content, post_time, parent_id, image):
         """
         클라이언트 -> 서버  
         게시물 작성 메시지를 생성한다.  
@@ -87,13 +87,18 @@ class Message:
             "content" : content,
             "post_time" : post_time,
             "parent_id" : parent_id,
+            #"location" : location,
+            "image" : image,
         }
     
     @classmethod
     def create_get_feed_msg(cls, id):
         """
         클라이언트 -> 서버  
-        피드 데이터 요청 메시지를 생성한다.  
+        피드 데이터 요청 메시지를 생성한다.
+         ⚠️ 아이디를 보내면 following 페이지가 보이고, None 보내면 랜덤으로 보임
+            (내 게시글은 for toy랑 following 페이지 둘 다 보임)
+
         """
         return {
             "type" : EnumMessageType.GET_FEED,
