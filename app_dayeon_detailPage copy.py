@@ -19,7 +19,7 @@ from Threads.threads_sera import ActivityPage
 # threadsFont = tk.font.Font(family="Apple SD Gothic Neo", size=12, weight="bold", overstrike=False)
 
 # 이미지 경로
-img_path = path.dirname(path.abspath(__file__)) + "\\..\\images\\"
+img_path = path.dirname(path.abspath(__file__)) + "\\images\\"
 
 messages = [
     {"id": "user1",
