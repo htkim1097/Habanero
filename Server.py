@@ -250,6 +250,7 @@ class ThreadsServer:
                     comment_cnt= len(comment_res),
                     writed_time=post[4],
                     image=post[2],
+                    parent_id=post[5]
                     )
                 datas[post[0]] = data
 

@@ -254,7 +254,7 @@ class MessageData:
         }
 
     @classmethod
-    def create_post_data(cls, id, content, like_cnt, comment_cnt, writed_time, image=None):
+    def create_post_data(cls, id, content, like_cnt, comment_cnt, writed_time, image=None, parent_id=None):
         """
         게시글 정보 데이터
         """
@@ -265,6 +265,7 @@ class MessageData:
             "like_cnt" : like_cnt,
             "comment_cnt" : comment_cnt,
             "writed_time" : writed_time,
+            "parent_id" : parent_id
         }
 
     @classmethod
