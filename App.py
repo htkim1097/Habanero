@@ -1697,7 +1697,7 @@ class MessagesPage(tk.Frame):
         self.list_frame = tk.Frame(self)
         self.list_frame.place(x=0, y=100, width=self.controller.app_width, height=self.controller.contents_frame_height - 120)
 
-        self.canvas = tk.Canvas(self.list_frame, bg="green", highlightthickness=0)
+        self.canvas = tk.Canvas(self.list_frame, bg="black", highlightthickness=0)
 
         self.scrollable_frame = tk.Frame(self.canvas, bg="black")
         self.scrollable_frame.config(height=300)
@@ -1710,6 +1710,14 @@ class MessagesPage(tk.Frame):
         self.canvas.pack(side="left", fill="both", expand=True)
 
         controller.place_menu_bar(self, EnumMenuBar.MESSAGE)
+
+        self.scrollable_frame.bind("<Configure>", self.on_configure)
+
+    def on_configure(self, event):
+        """
+        스크롤바의 크기를 동적으로 맞추기 위한 설정.
+        """
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def show_frame(self):
         self.tkraise()
@@ -1811,14 +1819,14 @@ class ChatRoomItemFrame(tk.Frame):
         image_label = tk.Label(self, image=photo, bg="#1e1e1e")
         image_label.image = photo
         image_label.pack(side="left", padx=10, pady=5)
-        # image_label.bind("<Button-1>", lambda e: self.on_click())
+        image_label.bind("<Button-1>", lambda e: self.on_click())
 
         text_frame = tk.Frame(self, bg="#1e1e1e")
-        # text_frame.bind("<Button-1>", lambda e: self.on_click())
+        text_frame.bind("<Button-1>", lambda e: self.on_click())
         name_label = tk.Label(text_frame, text=id, fg="white", font=("Arial", 12, "bold"), anchor="w", bg="#1e1e1e", width=39)
-        # name_label.bind("<Button-1>", lambda e: self.on_click())
+        name_label.bind("<Button-1>", lambda e: self.on_click())
         status_label = tk.Label(text_frame, text=name, font=("Arial", 10), anchor="w", bg="#1e1e1e", fg="gray")
-        # status_label.bind("<Button-1>", lambda e: self.on_click())
+        status_label.bind("<Button-1>", lambda e: self.on_click())
         last_msg_lb = tk.Label(text_frame, text=last_msg[:10], font=("Arial", 10), anchor="e", bg="#1e1e1e", fg="gray")
         last_msg_lb.place(x=340, y=10)
         last_date_lb = tk.Label(text_frame, text=last_datetime, font=("Arial", 8), anchor="e", bg="#1e1e1e", fg="gray")
@@ -1828,8 +1836,6 @@ class ChatRoomItemFrame(tk.Frame):
         status_label.pack(anchor="w")
         text_frame.pack(side="left", fill="x", expand=True)
 
-        for ch in self.winfo_children():
-            ch.bind("<Button-1>", lambda e: self.on_click())
         self.bind("<Button-1>", lambda e: self.on_click())
 
     def on_click(self):
@@ -2013,7 +2019,7 @@ class ChatRoomPage(tk.Frame):
         self.chat_user2 = None
         self.created_date = None
         self.isOnFrame = False
-        self.chat_update_interval = 10
+        self.chat_update_interval = 1
         self.message_list = []
         self.last_message_time = ""
 
@@ -2058,24 +2064,20 @@ class ChatRoomPage(tk.Frame):
         self.list_frame = tk.Frame(self)
         self.list_frame.place(x=0, y=100, width=self.controller.app_width, height=self.controller.contents_frame_height - 120)
 
-        self.canvas = tk.Canvas(self.list_frame, bg="green", highlightthickness=0)
+        self.canvas = tk.Canvas(self.list_frame, background="black", highlightthickness=0)
 
         self.scrollable_frame = tk.Frame(self.canvas, bg="black")
         self.scrollable_frame.config(height=300)
         self.canvas.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
 
         # 캔버스에 스크롤 가능한 프레임 넣기
-        self.scrollable_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw", width=self.controller.app_width, height=740)
+        self.scrollable_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw", width=self.controller.app_width)
 
-        self.scrollable_frame.bind("<Configure>", self.on_configure)
         self.scrollable_frame.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
         self.canvas.pack(side="left", fill="both", expand=True)
 
-    def on_configure(self, event):
-        """
-        스크롤바의 크기를 동적으로 맞추기 위한 설정.
-        """
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        # 프레임 크기 변경 시 스크롤 범위 갱신
+        self.scrollable_frame.bind("<Configure>", self.update_scrollregion)
 
     def show_frame(self, chatroom_data):
         self.chatroom_id = chatroom_data["chatroom_id"]
@@ -2161,7 +2163,6 @@ class ChatRoomPage(tk.Frame):
             msg = Message.create_add_chat_msg(self.chatroom_id, data)
             res = self.controller.request_db(msg)
             self.message_bar_entry.delete(0, tk.END)
-            self.message_bar_entry.insert(0, self.msg_default_text)
 
     def send_image(self):
         img_path = filedialog.askopenfile()
@@ -2169,10 +2170,12 @@ class ChatRoomPage(tk.Frame):
 
         # 채팅 입력 및 전송
         # 서버로 채팅 전송
-        #
+        
+    def update_scrollregion(self, event):
+        self.canvas.config(scrollregion=self.canvas.bbox("all"))
     
     def on_mousewheel_event(self, event):
-        self.canvas.yview_scroll(int((event.delta / 120)), "units")
+        self.canvas.yview_scroll(int((-1 * event.delta / 120)), "units")
 
     def create_msg_frame(self, parent, user_id, content, image, message_time, is_draw_profile_img):
         is_mine = (self.controller.get_user_id() == user_id)
