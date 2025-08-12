@@ -51,7 +51,7 @@ class App(tk.Tk):
         self.socket_type = Config.comm_config["socket_type"]
         self.host = Config.comm_config["host"]
         self.port = Config.comm_config["port"]
-        self.baudrate = Config.comm_config["baudrate"]
+        self.baudrate = Config.comm_config["data_size"]
 
         # 메뉴 버튼의 이미지
         # TODO 활성화 버튼 추가 필요
@@ -273,40 +273,39 @@ class App(tk.Tk):
         return self.__user_id
 
     def decode_image(self, image_bytes):
-        """
-        서버에서 받은 이미지 필드 처리 전용.
-        입력: image_bytes (예: b"b'iVBORw0KGgo...'" 또는 b'None')
-        반환: io.BytesIO (이미지 원본 바이트 스트림) 또는 None
+        """서버에서 받은 이미지 처리"""
 
-        - b'None' 이면 None 반환
-        - b"b'...'" 같이 이중 래핑도 안전하게 처리
-        - data:image/...;base64, 프리픽스가 있으면 제거
-        """
-
-        print("이미지 변환 1", image_bytes)
-
-        if not image_bytes or image_bytes == b'None':
+        #if not image_bytes or image_bytes == b'None':
+        if image_bytes in (None, b'None', 'None', b'', '', b"b'None'"):
             return None
 
         try:
-            # 1) bytes → str
-            s = bytes(image_bytes).decode('utf-8', 'ignore').strip()
+            s = image_bytes.decode('utf-8', 'ignore').strip()
 
-            # 2) 이중 래핑 제거: "b'...'" 또는 'b"..."'
+            # None 문자열이나 너무 짧은 값은 이미지 아님
+            if not s or s.lower() == 'none' or 'none' in s.lower():
+                return None
+
+            # 첫 번째 래핑 제거
             if (s.startswith("b'") and s.endswith("'")) or (s.startswith('b"') and s.endswith('"')):
                 s = s[2:-1]
 
-            # # 3) data URL 프리픽스 대응 (혹시 붙어오는 경우)
-            # #예: "data:image/png;base64,iVBORw0KGgo..."
-            # if ',' in s and 'base64' in s[:50].lower():
-            #     s = s.split(',', 1)[1]
+            # 두 번째 래핑 제거
+            if (s.startswith("b'") and s.endswith("'")) or (s.startswith('b"') and s.endswith('"')):
+                s = s[2:-1]
 
-            # 4) base64 → raw bytes
-            raw = base64.b64decode(s)
+            # base64 문자열이 유효한지 확인
+            try:
+                raw = base64.b64decode(s, validate=True)
+            except Exception:
+                print("[decode_image] base64 디코딩 실패 — 유효하지 않은 문자열")
+                return None
 
-            # 5) BytesIO로 반환 (열고 리사이즈는 호출자가 수행)
-            return io.BytesIO(raw)
-
+            # BytesIO로 반환
+            if raw:
+                return io.BytesIO(raw)
+            else:
+                return None
             # 함수 실행 후 각자 해야 되는 부분
             # image = Image.open(img_io).resize((300, 300))
             # self.img = ImageTk.PhotoImage(image)
@@ -315,12 +314,7 @@ class App(tk.Tk):
             print(f"[decode_image 오류] {e}")
             return None
 
-    # App (controller) 안에 추가
-    def open_post_detail(self, post_id, feed_data):
-        #page = self.controller.frames["PostDetailPage"]
-        #page.set_post(post_id, feed_data)  # 데이터 주입
-        #self.show_frame(PostDetailPage)  # 화면 전환
-        pass
+
 
 # 어플 실행 화면 - 시간 남으면..
 class firstPage(tk.Frame):
@@ -403,7 +397,6 @@ class LoginPage(tk.Frame):
 
     def show_frame(self):
         self.tkraise()
-        self.hide_error()
 
     def hide_error(self):
         self.error_frame.place_forget()
@@ -571,98 +564,6 @@ class JoinPage(tk.Frame):
     def show_frame(self):
         self.tkraise()
 
-# 홈 화면(for you 피드)
-# class HomePage(tk.Frame):
-#     def __init__(self, parent, controller):
-#         super().__init__(parent)
-#         self.controller = controller
-#         self.homeLeftImg = ImageTk.PhotoImage(Image.open(img_path + 'homeLeft2.png'))
-#         self.homeLogoImg = ImageTk.PhotoImage(Image.open(img_path + 'homeLogo2.png'))
-#         self.homeRightImg = ImageTk.PhotoImage(Image.open(img_path + 'homeRight2.png'))
-#
-#         # 프로필 사진 받는 부분 어떻게 할지 고민,,
-#         self.profileimg = ImageTk.PhotoImage(Image.open(img_path + 'profileImg.png').resize((40, 40)))
-#
-#         self.likeimg = ImageTk.PhotoImage(Image.open(img_path + 'like.png').resize((20, 20)))
-#         self.likedimg = ImageTk.PhotoImage(Image.open(img_path + 'like_red.png').resize((20, 17)))
-#         self.commentimg = ImageTk.PhotoImage(Image.open(img_path + 'reply.png').resize((20, 20)))
-#         self.repostimg = ImageTk.PhotoImage(Image.open(img_path + 'repost.png').resize((20, 20)))
-#         self.msgimg = ImageTk.PhotoImage(Image.open(img_path + 'msg.png').resize((20, 20)))
-#
-#         # 좋아요 이미지 리스트 [빈하트, 빨간하트]
-#         self.like_images = [self.likeimg, self.likedimg]  # 0: 빈 하트, 1: 빨간 하트
-#         self.like_state = 0
-#
-#         # 배경
-#         self.configure(bg="black")
-#
-#         topFrame = tk.Frame(self, bg="black")
-#         topFrame.place(x=0, y=0, relwidth=1)
-#
-#         # 홈 맨 왼쪽 위
-#         homeLeftBtn = tk.Button(topFrame, image=self.homeLeftImg, bd=0, background="black", activebackground="black",
-#                                 command=lambda: controller.show_frame(SidebarPage))
-#         # homeLeftBtn.place(x=5, y=0)
-#         homeLeftBtn.pack(side="left", padx=20, pady=35)
-#
-#         # 홈 맨 위 가운데 로고
-#         homeLogoBtn = tk.Button(topFrame, image=self.homeLogoImg, bd=0, background="black", activebackground="black",
-#                                 command=self.controller.show)
-#         homeLogoBtn.place(x=195, y=18)
-#
-#         # 홈 맨 위 오른쪽
-#         homeRightBtn = tk.Button(topFrame, image=self.homeRightImg, bd=0, background="black", activebackground="black",
-#                                  command=self.controller.show)
-#         homeRightBtn.place(x=400, y=28)
-#
-#         # 컨탠츠 프레임
-#         self.contentFrame = tk.Frame(self, bg="black")
-#         self.contentFrame.place(x=0, y=100, relwidth=1, height=self.controller.contents_frame_height - 100)
-#
-#         controller.place_menu_bar(self, EnumMenuBar.HOME)
-#
-#     def show_frame(self):
-#         self.tkraise()
-#         self.load_feed()
-#
-#
-#     # 피드 전체 데이터 가져오는 함수
-#     def load_feed(self):
-#         msg = Message.create_get_feed_msg(None)
-#         res = self.controller.request_db(msg)
-#
-#         for feed_data in res["data"].values():
-#             # 작성자의 프로필 이미지 받아오기
-#             msg = Message.create_get_userinfo_msg(feed_data["id"])
-#             user_info = self.controller.request_db(msg)
-#             profile_img_path = None
-#
-#             if user_info["status"] == EnumMsgStatus.SUCCESS:
-#                 if user_info["data"]["profile_img"] is not None:
-#                     print("HomePage 부분 프로필 이미지")
-#                     print(user_info["data"]["profile_img"])   # TODO 이미지 불러오기 테스트 후 수정요 -- 아마도 수정완료?!
-#                     profile_img_path = Image.open(img_path + "profileimg.png").resize((40,40))
-#                 else:
-#                     profile_img_path = Image.open(img_path + "noImageMan.png")  # 이미지 불러오기 실패 시
-#             else:
-#                 pass
-#
-#             feedItem = FeedItemFrame(
-#                 self.contentFrame,
-#                 self.controller,
-#                 profile_img_path,
-#                 feed_data,
-#                 self.like_images,
-#                 self.commentimg,
-#                 self.repostimg,
-#                 self.msgimg
-#             )
-#             feedItem.pack(fill="x", pady=(0, 5))
-#
-#             # 피드 구분 회색 선
-#             border = tk.Frame(self.contentFrame, bg="#323232", height=1)
-#             border.pack(fill="x", pady=10)
-
 # 스크롤 구현 완료된 for you 페이지
 class HomePage(tk.Frame):
     def __init__(self, parent, controller):
@@ -689,19 +590,18 @@ class HomePage(tk.Frame):
         topFrame.place(x=0, y=0, relwidth=1)
 
         # 홈 맨 왼쪽 위
-        homeLeftBtn = tk.Button(topFrame, image=self.homeLeftImg, bd=0, background="black", activebackground="black",
-                                command=lambda: controller.show_frame(SidebarPage))
-        # homeLeftBtn.place(x=5, y=0)
+        homeLeftBtn = tk.Button(topFrame, image=self.homeLeftImg, bd=0, background="black",
+                                activebackground="black", command=lambda: controller.show_frame(SidebarPage))
         homeLeftBtn.pack(side="left", padx=20, pady=35)
 
         # 홈 맨 위 가운데 로고
-        homeLogoBtn = tk.Button(topFrame, image=self.homeLogoImg, bd=0, background="black", activebackground="black",
-                                command=self.controller.show)
+        homeLogoBtn = tk.Button(topFrame, image=self.homeLogoImg, bd=0, background="black",
+                                activebackground="black", command=self.thread_load_feed)
         homeLogoBtn.place(x=195, y=18)
 
         # 홈 맨 위 오른쪽
-        homeRightBtn = tk.Button(topFrame, image=self.homeRightImg, bd=0, background="black", activebackground="black",
-                                 command=self.controller.show)
+        homeRightBtn = tk.Button(topFrame, image=self.homeRightImg, bd=0, background="black",
+                                 activebackground="black", command=self.controller.show)
         homeRightBtn.place(x=400, y=28)
 
         # ===== 스크롤 가능한 영역 =====
@@ -711,7 +611,7 @@ class HomePage(tk.Frame):
 
         self.canvas = tk.Canvas(self.list_frame, bg="black", highlightthickness=0)
         self.scrollable_frame = tk.Frame(self.canvas, bg="black")
-        self.scrollable_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.scrollable_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw", width=500)
 
         # 마우스 휠 이벤트 바인딩
         self.canvas.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
@@ -719,6 +619,8 @@ class HomePage(tk.Frame):
         self.scrollable_frame.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
 
         self.canvas.pack(side="left", fill="both", expand=True)
+
+        self.thread_load_feed()
 
         controller.place_menu_bar(self, EnumMenuBar.HOME)
 
@@ -741,7 +643,13 @@ class HomePage(tk.Frame):
 
     def show_frame(self):
         self.tkraise()
-        self.load_feed()
+        # t = threading.Thread(target=self.load_feed, daemon=True)
+        # t.start()
+        #self.load_feed()
+
+    def thread_load_feed(self):
+        t = threading.Thread(target=self.load_feed, daemon=True)
+        t.start()
 
     def load_feed(self):
         # 기존 피드 제거
@@ -749,35 +657,34 @@ class HomePage(tk.Frame):
             widget.destroy()
         self.feed_items.clear()
 
-        # None을 넣으면 전체 페이지를 불러옴.
         msg = Message.create_get_feed_msg(None)
         res = self.controller.request_db(msg)
-
-        # 데이터 수신 예시
-        # { 'type': 4, 'status': 1, 'message': '', 'data':
-        # {1: {'id': 'ht', 'content': '', 'image': None, 'like_cnt': '', 'comment_cnt': '', 'writed_time': datetime.datetime(2025, 8, 4, 12, 6, 3)},
-        #  2: {'id': 'ht', 'content': '', 'image': None, 'like_cnt': 1, 'comment_cnt': 1, 'writed_time': datetime.datetime(2025, 8, 4, 12, 14, 5)},
-        # }
-
-        if not res["data"]:
-            return
+        print("res 확인")
+        print(res)
 
         for post_id, feed_data in res["data"].items():
+            # 댓글(대댓글) 제외: parent_id가 존재하면 스킵
+            if feed_data.get("parent_id") not in (None, 'None', b'None', '', b''):
+                continue
+
             # 작성자의 프로필 이미지 받아오기
             msg = Message.create_get_userinfo_msg(feed_data["id"])
             user_info = self.controller.request_db(msg)
             profile_img_path = None
+            pImg = user_info["data"]["profile_img"]
 
             if user_info["status"] == EnumMsgStatus.SUCCESS:
-                if user_info["data"]["profile_img"] is not None:
-                    print(user_info["data"]["profile_img"])   # TODO 이미지 불러오기 테스트 후 수정요
-                    # img = Image.open(profile_img).resize((40, 40))
-                    profile_img_path = Image.open(img_path + "noImageMan.png")  # 임시
+                if pImg in (None, 'None', b'None', '', b'', b"b'None'"):
+                    # 등록된 프로필 사진이 없다면 기본 이미지
+                    profile_img_path = Image.open(img_path + "profileImg.png").resize((40, 40))
                 else:
-                    profile_img_path = Image.open(img_path + "noImageMan.png")  # 이미지 불러오기 실패 시
+                    bio = self.controller.decode_image(pImg)
+                    if bio:
+                        profile_img_path = Image.open(bio).resize((40, 40))
             else:
-                profile_img_path = Image.open(img_path + "noImageMan.png")
+                profile_img_path = Image.open(img_path + "profileImg.png").resize((40, 40))
 
+            profile_img_path = self.controller.crop_img_circle(profile_img_path)
             feedItem = FeedItemFrame(
                 parent=self.scrollable_frame,
                 controller=self.controller,
@@ -788,6 +695,7 @@ class HomePage(tk.Frame):
                 repost_img=self.repostimg,
                 msg_img=self.msgimg,
                 post_id=post_id
+
             )
             feedItem.pack(fill="x", pady=(0, 5))
             self.feed_items.append(feedItem)
@@ -798,11 +706,6 @@ class HomePage(tk.Frame):
             border.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
             border.pack(fill="x", pady=10)
 
-    # # App (controller) 안에 추가
-    # def open_post_detail(self, post_id, feed_data):
-    #     page = self.controller.frames["PostDetailPage"]
-    #     page.set_post(post_id, feed_data)  # 데이터 주입
-    #     self.controller.show_frame(PostDetailPage)  # 화면 전환
 
 # 마이 페이지 화면
 class MyPage(tk.Frame):
@@ -1124,8 +1027,11 @@ class PostDetailPage(tk.Frame):
         self.post_data = None
         self.post_img_ref = None
 
-        # 헤더/뒤로 가기
-        back = tk.Button(self, text="← Back", command=lambda: self.controller.show_frame(HomePage))
+        self.backImg = ImageTk.PhotoImage(Image.open(img_path + 'back_black.png'))
+
+        # 뒤로 가기 버튼
+        back = tk.Button(self, image=self.backImg, bd=0, background="black", activebackground="black",
+                         command=lambda: self.controller.show_frame(HomePage))
         back.pack(anchor="w", padx=10, pady=10)
 
         # 본문 영역 (스크롤)
@@ -1163,14 +1069,41 @@ class PostDetailPage(tk.Frame):
 
         # 댓글 입력
         entry_frame = tk.Frame(self, bg="black")
-        entry_frame.pack(fill="x", side="bottom")
-        self.comment_entry = tk.Entry(entry_frame, bg="#222", fg="white", insertbackground="white")
-        self.comment_entry.pack(side="left", fill="x", expand=True, padx=8, pady=8)
-        tk.Button(entry_frame, text="Send", command=self._send_comment).pack(side="right", padx=8, pady=8)
+        entry_frame.pack(side="bottom", fill="x")
+
+        msg = Message.create_get_userinfo_msg(self.controller.get_user_id())
+        res = self.controller.request_db(msg)
+        pImg = res["data"]["profile_img"]
+
+        # 프로필 사진이 없다면 기본 이미지
+        profile_path = Image.open(img_path + 'profileImg.png').resize((40,40))
+
+        # 서버에서 프로필 이미지가 제대로 왔다면 디코드 후 사용
+        if pImg not in (None, 'None', b'None', '', b'', b"b'None'"):
+            bio = self.controller.decode_image(pImg)
+            if bio:
+                try:
+                    profile_path = Image.open(bio).resize((40, 40))
+
+                except Exception as e:
+                    print("프로필 이미지 열기 실패:", e)
+
+        profile_path = self.controller.crop_img_circle(profile_path)
+        self.Img = ImageTk.PhotoImage(profile_path)
+        self.writer_img = tk.Label(entry_frame, image=self.Img, bg="black")
+        self.writer_img.pack(side="left", anchor="w", padx=(10,2), pady=10)
+
+        self.comment_entry = tk.Entry(entry_frame, bg="#222", fg="white", insertbackground="black", relief="flat")
+        self.comment_entry.pack(side="left", anchor="w", fill="x", expand=True, padx=8, pady=8, ipady=10)
+
+        sendBtn = tk.Button(entry_frame, text="Send", bg="#1e1e1e", fg="white", relief="flat", bd=0, padx=12, pady=6,
+                            activebackground="#2a2a2a", activeforeground="white", cursor="hand2",
+                            command=self.send_comment)
+        sendBtn.pack(side="right", padx=8, pady=8)
 
 
     def set_post(self, post_id, feed_data):
-        """Home에서 호출: 상세 표시 데이터 주입"""
+        """ Home에서 호출: 상세 표시 데이터 주입 """
         self.post_id = post_id
         self.post_data = feed_data
 
@@ -1182,70 +1115,138 @@ class PostDetailPage(tk.Frame):
         self.image_lbl.config(image="")
         self.post_img_ref = None
         img_io = self.controller.decode_image(feed_data.get("image"))
-        if img_io:
-            img_io.seek(0)
-            pil = Image.open(img_io)
-            pil.thumbnail((430, 430))
-            self.post_img_ref = ImageTk.PhotoImage(pil)
+        if img_io is not None:
+            image = Image.open(img_io).resize((300, 300))
+            self.post_img_ref = ImageTk.PhotoImage(image)
             self.image_lbl.config(image=self.post_img_ref)
+        else:
+            print("이미지 없음")
+            # 기본 이미지나 빈 상태 처리
 
         # 댓글 로딩
-        self._load_comments()
+        self.load_comments()
 
-    def _load_comments(self):
-        """서버에서 post_id의 댓글 목록을 받아 렌더링"""
+    def load_comments(self):
+        """서버에서 post_id의 댓글 목록을 받아 실행"""
         # TODO: 서버 API가 있으면 사용. 임시로 예시:
         for w in self.comments_container.winfo_children():
             w.destroy()
 
-        # 예시: 서버가 댓글 리스트 반환했다고 가정
-        # msg = Message.create_get_comments_msg(self.post_id)
-        # res = self.controller.request_db(msg)
-        # comments = res["data"]  # [(user, content, time), ...]
+        # 서버에서 댓글 가져오기 (예: post_id의 자식들)
+        msg = Message.create_get_comments(post_id=self.post_id)
+        res = self.controller.request_db(msg)
+        print("댓글 확인")
+        print(res)
 
-        comments = []  # ← 서버 연동 전 임시 리스트
+        if res and res.get("status") == 1:
+            comments = res.get("data", [])
+        else:
+            comments = []
+
         if not comments:
             tk.Label(self.comments_container, text="No comments yet.", fg="gray", bg="black").pack(anchor="w")
             return
 
         for c in comments:
-            self._add_comment_item(c)
+            self.add_comment_item(c)
+            print("c 확인")
+            print(c)
 
-    def _add_comment_item(self, c):
-        # c: dict or tuple
-        frame = tk.Frame(self.comments_container, bg="black")
-        frame.pack(fill="x", pady=6)
-        tk.Label(frame, text=c["user"], fg="#ddd", bg="black", font=("Arial", 10, "bold")).pack(anchor="w")
-        tk.Label(frame, text=c["content"], fg="white", bg="black", wraplength=430, justify="left").pack(anchor="w")
 
-    def _send_comment(self):
+    def add_comment_item(self, c):
+        row = tk.Frame(self.comments_container, bg="black")
+        row.pack(fill="x", pady=6)
+
+        leftFrame = tk.Frame(row, bg="black", width=50)
+        leftFrame.pack(side="left", anchor="n", padx=10)
+
+        rightFrame = tk.Frame(row, bg="black")
+        rightFrame.pack(side="left", fill="x")
+
+        # --- 프로필 이미지 만들기 ---
+        user_info = self.controller.request_db(Message.create_get_userinfo_msg(c["user_id"]))
+        if user_info and user_info.get("status") != 1:
+            return
+
+        pImg = user_info["data"]["profile_img"]
+
+        # 기본 이미지
+        profile_img = Image.open(img_path + "profileImg.png").resize((40, 40))
+        if pImg not in (None, 'None', b'None', '', b'', b"b'None'"):
+            bio = self.controller.decode_image(pImg)
+            if bio:
+                try:
+                    profile_img = Image.open(bio).resize((40, 40))
+                except Exception as e:
+                    print("프로필 이미지 열기 실패:", e)
+
+        profile_img = self.controller.crop_img_circle(profile_img)
+        profile_photo = ImageTk.PhotoImage(profile_img)
+        profileLabel = tk.Label(leftFrame, image=profile_photo, bg="black")
+        profileLabel.pack(side="left", anchor="n", padx=(0, 8))
+        profileLabel.image = profile_photo  # 프로필 유지를 위함
+
+        # --- 텍스트 영역 ---
+        # 시간 계산
+        str_time = str(c["writed_time"])
+        post_time = datetime.datetime.strptime(str_time, "%Y-%m-%d %H:%M:%S")
+        now = datetime.datetime.now()
+        diff = now - post_time
+        if diff.days >= 1:
+            postTime = f"{diff.days} day ago"
+        elif diff.seconds >= 3600:
+            postTime = f"{diff.seconds // 3600}h"
+        elif diff.seconds >= 60:
+            postTime = f"{diff.seconds // 60}m"
+        else:
+            postTime = f"{diff.seconds}s"
+
+        text_box = tk.Frame(rightFrame, bg="black")
+        text_box.pack(fill="x",  anchor="w")
+
+        topInfo = tk.Frame(text_box, bg="black")
+        topInfo.pack(fill="x", anchor="w")
+
+        user_lbl = tk.Label(topInfo, text=c["user_id"], fg="#ddd", bg="black", font=("Arial", 10, "bold"))
+        user_lbl.pack(side="left")
+
+        time_lbl = tk.Label(topInfo, text=postTime, fg="gray", bg="black", font=("Arial", 9))
+        time_lbl.pack(side="left", padx=(8, 0))
+
+        content_lbl = tk.Label(text_box, text=c["content"], fg="white", bg="black", wraplength=380, justify="left")
+        content_lbl.pack(anchor="w")
+
+
+    def send_comment(self):
         text = self.comment_entry.get().strip()
         if not text:
             return
+
         # 서버로 전송(parent_id=self.post_id)
         msg = Message.create_post_msg(
             id=self.controller.get_user_id(),
             content=text,
             post_time=datetime.datetime.now(),
-            parent_id=self.post_id,     # ★ 댓글
-            image=""
+            parent_id=self.post_id,     # patent_id 가 있으면 댓글로 구분
+            image=b'None'
         )
+
         # 통신은 워커 스레드로
-        threading.Thread(target=self._send_comment_worker, args=(msg,), daemon=True).start()
+        threading.Thread(target=self.send_comment_worker, args=(msg,), daemon=True).start()
 
-    def _send_comment_worker(self, msg):
-        try:
-            res = self.controller.request_db(msg)
-        except Exception as e:
-            res = {"status": 0, "message": str(e)}
-        self.after(0, self._after_send_comment, res)
+    def send_comment_worker(self, msg):
+        res = self.controller.request_db(msg)
+        self.after(0, self.after_send_comment, res)
 
-    def _after_send_comment(self, res):
+    def after_send_comment(self, res):
         if res and res.get("status") == 1:
             self.comment_entry.delete(0, "end")
             self._load_comments()  # 재로딩
         else:
             print("댓글 실패:", res)
+
+    def show_frame(self):
+        self.tkraise()
 
 
 
@@ -1255,10 +1256,6 @@ class Following_FeedPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-
-        # # HomePage 클래스를 배경으로 사용
-        # self.home = HomePage(self, controller)
-        # self.home.place(x=0, y=0, relwidth=1, relheight=1)
 
         topFrame = tk.Frame(self, bg="black")
         topFrame.place(x=0, y=0, relwidth=1)
@@ -1317,10 +1314,7 @@ class Following_FeedPage(tk.Frame):
                 if user_info["data"]["profile_img"] is not None:
                     print("HomePage 부분 프로필 이미지")
                     print(user_info["data"]["profile_img"])   # TODO 이미지 불러오기 테스트 후 수정요 -- 아마도 수정완료?!
-                    # img = Image.open(profile_img).resize((40, 40))
-                    #profile_img_path = Image.open(img_path + "noImageMan.png")  # 임시
                     profile_img_path = Image.open(img_path + "profileimg.png").resize((40,40))  # 임시
-
                 else:
                     profile_img_path = Image.open(img_path + "noImageMan.png")  # 이미지 불러오기 실패 시
             else:
@@ -1348,6 +1342,7 @@ class Following_FeedPage(tk.Frame):
 class FeedItemFrame(tk.Frame):
     def __init__(self, parent, post_id, controller, profile_img_path, feed_data, like_images, comment_img, repost_img, msg_img):
         super().__init__(parent, bg="black")
+        self.controller = parent
         self.controller = controller
         self.feed_data = feed_data
         self.post_id = post_id
@@ -1372,6 +1367,7 @@ class FeedItemFrame(tk.Frame):
         #imgLabel.image = profile_img
         imgLabel.pack(anchor="n")
 
+        # 55555555555
         contentArea = tk.Frame(rightFrame, bg="black")
         contentArea.pack(fill="x", anchor="w")
 
@@ -1405,21 +1401,17 @@ class FeedItemFrame(tk.Frame):
         feedLabel.pack(anchor="w", pady=(0, 10))
 
         # 게시글 이미지(decode_image 함수 사용 버전)
-        image_data = feed_data["image"]
+        pil_img = self.controller.decode_image(feed_data["image"])
 
-        # decode_image 함수가 base64 문자열을 처리할 수 있게 한다고 가정
-        pil_img = self.controller.decode_image(image_data)
+        if pil_img is not None:
+            image = Image.open(pil_img).resize((300, 300))
+            self.img = ImageTk.PhotoImage(image)
+            imgLabel = tk.Label(contentArea, image=self.img, bg="black")
+            imgLabel.pack(anchor="w", pady=(0, 10))
+        else:
+            # 기본 이미지나 빈 상태 처리
+            print("이미지 없음")
 
-        # print("디코드 이미지: ", pil_img)
-
-        # # decode_image가 None을 반환했는지 확인
-        # if pil_img:
-        #     image = Image.open(pil_img).resize((300, 300))
-        #     self.img = ImageTk.PhotoImage(image)
-        #     imgLabel = tk.Label(contentArea, image=self.img, bg="black")
-        #     imgLabel.pack(anchor="w", pady=(0, 10))
-        # else:
-        #     print("[decode_image 오류] decode_image가 None을 반환했습니다.")
 
         # 버튼 영역(좋아요, 댓글, 리포스트, 공유 버튼)
         btnFrame = tk.Frame(rightFrame, bg="black")
@@ -1457,7 +1449,7 @@ class FeedItemFrame(tk.Frame):
         timeLabel.bind("<Button-1>", self.on_open_detail)
         feedLabel.bind("<Button-1>", self.on_open_detail)
 
-        # 마우스 올렸을 때 손가락 커서로
+        # 마우스 올렸을 때 손가락 커서로 변경
         for w in (self, imgLabel, contentArea, topInfo, idLabel, timeLabel, feedLabel):
             w.configure(cursor="hand2")
 
@@ -1465,12 +1457,19 @@ class FeedItemFrame(tk.Frame):
         commentBtn.config(command=self.on_open_detail)
 
     def on_open_detail(self, event=None):
-        # 상세 페이지로 전환 요청
-        self.controller.open_post_detail(self.post_id, self.feed_data)
+        """게시물 클릭 시 해당 게시글로 이동"""
+        try:
+            page = self.controller.frames["PostDetailPage"]
+        except KeyError:
+            print("PostDetailPage가 등록되지 않았습니다. add_frame(PostDetailPage, ...) 호출 확인 필요.")
+            return
+
+        page.set_post(self.post_id, self.feed_data)
+        self.controller.show_frame(PostDetailPage)
     # ============================
 
     def toggle_like(self):
-        # 상태 토글
+        # 좋아요 상태 토글
         self.like_state = 1 - self.like_state
         self.likeBtn.config(image=self.like_images[self.like_state])
 
@@ -1487,6 +1486,8 @@ class FeedItemFrame(tk.Frame):
 
     def show(self):
         print("hi")
+
+
 
 # Feeds 사이드바
 class SidebarPage(tk.Frame):
@@ -1505,10 +1506,12 @@ class SidebarPage(tk.Frame):
         label1 = tk.Label(sideFrame, text="Feeds", fg="white", bg="black", font=("Arial", 23, "bold"))
         label1.place(x="20", y="30")
 
-        foryouBtn = tk.Button(sideFrame, image=self.feeds1img, bd=0, bg="black", activebackground="black", command=lambda: controller.show_frame(HomePage))
+        foryouBtn = tk.Button(sideFrame, image=self.feeds1img, bd=0, bg="black", activebackground="black",
+                              command=lambda: controller.show_frame(HomePage))
         foryouBtn.place(x="20", y="105")
 
-        followingBtn = tk.Button(sideFrame, image=self.feeds2img, bd=0, bg="black", activebackground="black", command=lambda: controller.show_frame(Following_FeedPage))
+        followingBtn = tk.Button(sideFrame, image=self.feeds2img, bd=0, bg="black", activebackground="black",
+                                 command=lambda: controller.show_frame(Following_FeedPage))
         followingBtn.place(x="20", y="180")
 
     def show_frame(self):
@@ -1549,8 +1552,26 @@ class PostFeed(tk.Frame):
         rightFrame = tk.Frame(containerFrame, bg="black")
         rightFrame.pack(side="left", fill="x")
 
-        self.profileimg = ImageTk.PhotoImage(Image.open(img_path + "noImageMan.png").resize((45, 45)))
-        imgLabel = tk.Label(leftFrame, image=self.profileimg, bg="pink")
+        # 99999999999999999999
+        msg = Message.create_get_userinfo_msg(self.controller.get_user_id())
+        res = self.controller.request_db(msg)
+        pImg = res["data"]["profile_img"]
+
+        # 프로필 사진이 없다면 기본 이미지
+        profile_path = Image.open(img_path + 'profileImg.png').resize((40, 40))
+
+        # 서버에서 이미지가 제대로 왔다면 디코드 후 사용
+        if pImg not in (None, 'None', b'None', '', b'', b"b'None'"):
+            bio = self.controller.decode_image(pImg)
+            if bio:
+                try:
+                    profile_path = Image.open(bio).resize((40, 40))
+                except Exception as e:
+                    print("프로필 이미지 열기 실패:", e)
+
+        profile_path = self.controller.crop_img_circle(profile_path)
+        self.profileimg = ImageTk.PhotoImage(profile_path)
+        imgLabel = tk.Label(leftFrame, image=self.profileimg, bg="black")
         imgLabel.pack(anchor="n", padx=10, pady=10)
 
         contentArea = tk.Frame(rightFrame, bg="black")
@@ -1569,11 +1590,6 @@ class PostFeed(tk.Frame):
         self.textEntry.insert(1.0, "What's new?")
         self.click_count = 0
         self.textEntry.bind('<Button-1>', lambda e: self.controller.on_Text_click(self.textEntry, "What's new?"))
-        #textEntry.bind('<Button-1>', lambda e: self.controller.on_Text_click(textEntry, self.click_count))
-
-        # 추가한 이미지 들어갈 프레임 --- 위치 수정 필요
-        # photoFrame = tk.Frame(contentArea, bg="blue")
-        # photoFrame.pack()
 
         # 추가한 이미지 표시용 라벨
         self.photoLabel = tk.Label(rightFrame, bg="black")
@@ -1591,7 +1607,8 @@ class PostFeed(tk.Frame):
         self.postBtn = tk.Button(btnFrame, image=self.postImg, bd=0, background="black", activebackground="black", command=self.update_post_info)
         self.postBtn.pack(padx=(200,0))
 
-        self.controller.place_menu_bar(self, -1)
+        controller.place_menu_bar(self, EnumMenuBar.HOME)
+
 
     def open_Img_File(self):
         file_path = filedialog.askopenfilename(
@@ -1599,56 +1616,24 @@ class PostFeed(tk.Frame):
             filetypes=(("모든 파일", "*.*"), ("이미지 파일", "*.png;*.jpg;*.jpeg"))
         )
         if file_path:
-            print(f"선택된 파일 경로: {file_path}")
-            try:
-                self.img = Image.open(file_path).resize((300, 300))  # 원하는 크기로 조절
-                self.selected_photo = ImageTk.PhotoImage(self.img)  # 인스턴스 변수로 저장
-                self.photoLabel.config(image=self.selected_photo)
-                self.selected_photo_path = file_path  # 이미지 경로 저장 (나중에 서버 전송용)
+            self.img = Image.open(file_path).resize((300, 300))  # 원하는 크기로 조절
+            self.selected_photo = ImageTk.PhotoImage(self.img)  # 인스턴스 변수로 저장
+            self.photoLabel.config(image=self.selected_photo)
+            self.selected_photo_path = file_path  # 이미지 경로 저장 (나중에 서버 전송용)
 
-                self.file_img = open(file_path, 'rb').read()
-                self.image_base64 = base64.b64encode(self.file_img)
-                print("오픈 파일=================================")
-                print(len(self.file_img))
+            self.file_img = open(file_path, 'rb').read()
+            self.image_base64 = base64.b64encode(self.file_img).decode('utf-8')
 
-                #image_base64 = base64.b64encode(file_img).decode('utf-8')
-                # self.image_base64 = base64.b64encode(file_img)
-                # print("파일 베이스================================")
-                # print(len(self.image_base64))
+            #image_base64 = base64.b64encode(file_img).decode('utf-8')
+            # self.image_base64 = base64.b64encode(file_img)
+            # print("파일 베이스================================")
 
-            except Exception as e:
-                print(f"이미지 열기 오류: {e}")
 
     def show_frame(self):
         self.tkraise()
 
-    # def update_post_info(self):
-    #
-    #     # 이부분을 스레드로 따로 작업하게 해줘
-    #     #==========================
-    #     # 이미지가 없을 때 b'None'이나 None을 명시적으로 넣어줌
-    #     if self.image_base64:
-    #         img_data = self.image_base64
-    #     else:
-    #         img_data = b'None'
-    #
-    #     msg = Message.create_post_msg(
-    #         id=self.controller.get_user_id(),
-    #         content=self.textEntry.get("1.0", tk.END),
-    #         post_time=datetime.datetime.now(),
-    #         parent_id=None,
-    #         image=img_data
-    #     )
-    #     #print(msg)
-    #     #res = self.controller.request_db(msg)
-    #     #print(res)
-    #
-    #     self.controller.show_frame(HomePage)
-    #     #==========================
-
     def update_post_info(self):
-        # 버튼 중복 클릭 방지(옵션)
-        # postBtn을 인스턴스 변수로 들고 있다면 아래처럼:
+        # 버튼 중복 클릭 방지
         self.postBtn.config(state="disabled")
 
         # 이미지: 없으면 명시적으로 None 표기 (서버에서 처리)
@@ -1666,7 +1651,7 @@ class PostFeed(tk.Frame):
         t = threading.Thread(target=self._post_worker, args=(msg,), daemon=True)
         t.start()
 
-    def _post_worker(self, msg):
+    def post_worker(self, msg):
         try:
             res = self.controller.request_db(msg)
         except Exception as e:
@@ -1674,10 +1659,10 @@ class PostFeed(tk.Frame):
                    "status": 0, "message": str(e), "data": None}
 
         # ★ UI 갱신은 메인 스레드에서
-        self.after(0, self._on_post_done, res)
+        self.after(0, self.on_post_done, res)
         # 여기서는 Tk 호출 금지
 
-    def _on_post_done(self, res):
+    def on_post_done(self, res):
         # 버튼 복구(옵션)
         self.postBtn.config(state="normal")
 
@@ -1688,7 +1673,6 @@ class PostFeed(tk.Frame):
             # 실패 → 에러 표시
             err = res.get("message") if isinstance(res, dict) else "Unknown error"
             print("[POST 실패]", err)
-            # 필요하면 팝업/라벨로 사용자에게 알림
 
 # 메시지 페이지
 class MessagesPage(tk.Frame):
@@ -2115,15 +2099,12 @@ class ChatRoomPage(tk.Frame):
         self.chat_user1 = chatroom_data["user_id1"]
         self.chat_user2 = chatroom_data["user_id2"]
         self.created_date = chatroom_data["chatroom_date"]
-
         self.name_lb.config(text=self.chat_user2)
     
         self.tkraise() 
-
         self.clear_chat()
 
         self.isOnFrame = True
-
         self.chat_thread = threading.Thread(target=self.load_chat_data)
         self.chat_thread.daemon = True
         self.chat_thread.start()
@@ -2145,15 +2126,10 @@ class ChatRoomPage(tk.Frame):
             
             if messages["data"]:
                 for i, msg in enumerate(messages["data"]):
-                    if i != 0:
-                        prev_day = datetime.datetime.strptime(str(messages["data"][i - 1]["message_time"]).split(" ")[0], "%Y-%m-%d").day
-                    else:
-                        prev_day = -1
-
+                    prev_day = datetime.datetime.strptime(str(messages["data"][i - 1]["message_time"]).split(" ")[0], "%Y-%m-%d").day
                     now_day = datetime.datetime.strptime(str(messages["data"][i]["message_time"]).split(" ")[0], "%Y-%m-%d").day
 
                     # 이전 메시지와 날짜(일)가 다르면
-                    # if prev_day == -1 or now_day != prev_day:
                     if now_day != prev_day:
                         # 구분선 추가
                         self.create_sepline(self.scrollable_frame, datetime.datetime.strptime(str(msg["message_time"]).split(" ")[0], "%Y-%m-%d").date())
@@ -2282,6 +2258,8 @@ class ActivityPage(tk.Frame):
         label.pack()
 
         controller.place_menu_bar(self, EnumMenuBar.ACTIVITY)
+
+        
 
     def show_frame(self):
         self.tkraise()

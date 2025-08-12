@@ -11,7 +11,7 @@ class ThreadsServer:
     def __init__(self):
         self.address = Config.comm_config["host"]
         self.port = Config.comm_config["port"]
-        self.baudrate = Config.comm_config["baudrate"]
+        self.data_size = Config.comm_config["data_size"]
         self.db_address = Config.db_config["host"]
         self.db_port = Config.db_config["port"]
         self.db_user = Config.db_config["user"]
@@ -37,7 +37,7 @@ class ThreadsServer:
         while self.is_running:
             try:
                 client_socket, address = self.socket.accept()
-                client_thread = threading.Thread(target=self.handle_client, args=(client_socket, address, self.baudrate))
+                client_thread = threading.Thread(target=self.handle_client, args=(client_socket, address, self.data_size))
 
                 # 메인 스레드 종료시 클라이언트 스레드도 종료되도록 데몬 스레드로 함
                 client_thread.daemon = True
@@ -47,7 +47,7 @@ class ThreadsServer:
                 print(f"[서버 오류] - {e}")
                 break
 
-    def handle_client(self, client_socket, address, baudrate):
+    def handle_client(self, client_socket, address, data_size):
         """
         클라이언트 연결 관련
         """
@@ -57,7 +57,7 @@ class ThreadsServer:
             while True:
                 recv_data = b""
                 while True:
-                    chunk = client_socket.recv(baudrate)
+                    chunk = client_socket.recv(data_size)
                     if not chunk:
                         break
 
@@ -636,7 +636,7 @@ class ThreadsServer:
                     msg["user_name"],
                     msg["user_id"],
                 )
-                
+
             if msg["profile_image"]:
                 query = """
                 update user set profile_image = %s where user_id = %s;
@@ -764,7 +764,6 @@ class ThreadsServer:
 
 if __name__ == "__main__":
     server = ThreadsServer()
-
     try:
         server.start_server()
     except Exception as e:
