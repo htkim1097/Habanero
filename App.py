@@ -2122,7 +2122,8 @@ class ChatRoomPage(tk.Frame):
                     now_day = datetime.datetime.strptime(str(messages["data"][i]["message_time"]).split(" ")[0], "%Y-%m-%d").day
 
                     # 이전 메시지와 날짜(일)가 다르면
-                    if prev_day == -1 or now_day != prev_day:
+                    # if prev_day == -1 or now_day != prev_day:
+                    if now_day != prev_day:
                         # 구분선 추가
                         self.create_sepline(self.scrollable_frame, datetime.datetime.strptime(str(msg["message_time"]).split(" ")[0], "%Y-%m-%d").date())
                         # 메시지 말풍선 gui 생성 후 도시하기
@@ -2150,12 +2151,13 @@ class ChatRoomPage(tk.Frame):
         메시지 전송하기
         """
         text = self.message_bar_entry.get()
+        my_id = self.controller.get_user_id()
 
         # 메시지를 작성했다면
         if text != self.msg_default_text and text:
             # 메시지 데이터 정의 후 메시지 전송하기
             data = MessageData.create_msg_data(
-                user_id=self.controller.get_user_id(), 
+                user_id=my_id, 
                 chatroom_id=self.chatroom_id, 
                 content=text,
                 image="",
@@ -2163,6 +2165,18 @@ class ChatRoomPage(tk.Frame):
             msg = Message.create_add_chat_msg(self.chatroom_id, data)
             res = self.controller.request_db(msg)
             self.message_bar_entry.delete(0, tk.END)
+
+        if self.chat_user1 == my_id:
+            to_user_id = self.chat_user2
+        else:
+            to_user_id = self.chat_user1
+
+        # notif = Message.create_add_notif_msg(
+        #     user_id=to_user_id,
+        #     from_user_id=self.controller.get_user_id(),
+        #     notif_type=EnumNotifType.MESSAGE,
+        #     concerned_id=
+        # )
 
     def send_image(self):
         img_path = filedialog.askopenfile()
