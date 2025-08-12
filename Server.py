@@ -5,6 +5,8 @@ import pymysql
 from Msg import *
 import datetime
 
+# TODO 모든 동작에 비동기 넣기
+
 class ThreadsServer:
     def __init__(self):
         self.address = Config.comm_config["host"]
@@ -112,6 +114,8 @@ class ThreadsServer:
                 return self.handle_add_chat_data(msg)
             elif msg_type == EnumMessageType.GET_COMMENTS:
                 return self.handle_get_comments(msg)
+            elif msg_type == EnumMessageType.ADD_NOTIF:
+                return self.handle_add_notif(msg)
             
             else:
                 raise Exception("[오류:handle_data] - 클라이언트로부터 받은 데이터의 type 값에 오류가 있습니다.")
@@ -272,6 +276,87 @@ class ThreadsServer:
         
         """
         m_type = EnumMessageType.GET_NOTIFICATIONS
+        try:
+            query = """
+            select * from notification where user_id = %s;
+            """
+            params = (
+                msg["user_id"],
+            )
+
+            notifs = self.send_query_safty(query=query, param=params)
+
+            datas = []
+
+            for notif in notifs:
+                notif_id = notif[0]
+                user_id = notif[1]
+                from_user_id = notif[2]
+                notif_type = notif[3]
+                concerned_id = notif[4]
+
+                if notif_type == EnumNotifType.MESSAGE:
+                    query = """
+                    select * from message where message_id = %s;
+                    """
+                    params = (
+                        msg["concerned_id"],
+                    )
+                    data = self.send_query_safty(query=query, param=params)
+                    
+                elif notif_type == EnumNotifType.COMMENT or notif_type == EnumNotifType.THREADS:
+                    query = """
+                    select * from post where post_id = %s;
+                    """
+                    params = (
+                        msg["concerned_id"],
+                    )
+                    data = self.send_query_safty(query=query, param=params)
+
+                elif notif_type == EnumNotifType.FOLLOW:
+                    query = """
+                    select * from follow where follow_id = %s;
+                    """
+                    params = (
+                        msg["concerned_id"],
+                    )
+                    data = self.send_query_safty(query=query, param=params)
+                
+                elif notif_type == EnumNotifType.LIKE:
+                    query = """
+                    select * from user_post_like where user_post_like_id = %s;
+                    """
+                    params = (
+                        msg["concerned_id"],
+                    )
+                    data = self.send_query_safty(query=query, param=params)
+
+                d = MessageData.create_notif_data(
+                    notif_type=notif_type,
+                    from_user_id=from_user_id,
+                    content=data
+                )
+
+                datas.append(d)
+
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.SUCCESS, 
+                data=datas
+                )
+        except Exception as e:
+            print(f"[오류:handel_get_notifi]- {e}")
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.FAILED, 
+                message=e
+                )
+        
+    def handle_add_notif(self, msg):
+        """
+        
+        """
+        m_type = EnumMessageType.ADD_NOTIF
         try:
             res = self.send_query(f"select * from notification where user_id = '{msg["id"]}'")
             return Message.create_response_msg(
@@ -551,7 +636,8 @@ class ThreadsServer:
                     msg["user_name"],
                     msg["user_id"],
                 )
-            elif msg["profile_image"]:
+                
+            if msg["profile_image"]:
                 query = """
                 update user set profile_image = %s where user_id = %s;
                 """
@@ -559,6 +645,7 @@ class ThreadsServer:
                     msg["profile_image"],
                     msg["user_id"],
                 )
+                print("update............")
     
             res = self.send_query_safty(query=query, param=params)
     

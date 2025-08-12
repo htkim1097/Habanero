@@ -21,6 +21,7 @@ class EnumMessageType:
     UPDATE_PROFILE = 100
     ADD_LIKE = 16
     GET_COMMENTS = 17
+    ADD_NOTIF = 18
 
 class EnumMsgStatus:
     """
@@ -28,6 +29,16 @@ class EnumMsgStatus:
     """
     FAILED = 0
     SUCCESS = 1
+
+class EnumNotifType:
+    """
+    알림 유형 열거형
+    """
+    FOLLOW = 0
+    MESSAGE = 1
+    THREADS = 2
+    LIKE = 3
+    COMMENT = 4
 
 class Message:
     """
@@ -107,14 +118,28 @@ class Message:
         }
         
     @classmethod
-    def create_get_notif_msg(cls, id):
+    def create_get_notif_msg(cls, user_id):
         """
         클라이언트 -> 서버  
         알림 데이터 요청 메시지를 생성한다.  
         """
         return {
             "type" : EnumMessageType.GET_NOTIFICATIONS,
-            "id" : id,
+            "user_id" : user_id,
+        }
+    
+    @classmethod
+    def create_add_notif_msg(cls, user_id, from_user_id, notif_type, concerned_id):
+        """
+        클라이언트 -> 서버
+        알림 메시지를 생성한다.
+        """
+        return {
+            "type" : EnumMessageType.ADD_NOTIF,
+            "user_id" : user_id,
+            "from_user_id" : from_user_id,
+            "notif_type" : notif_type,
+            "concerned_id" : concerned_id
         }
     
     @classmethod
@@ -278,7 +303,7 @@ class MessageData:
             "notif_type" : notif_type,
             "from_user_id" : from_user_id,
             "content" : content,
-        } 
+        }
     
     @classmethod
     def create_msg_data(cls, user_id, chatroom_id, content, message_time, image=None):

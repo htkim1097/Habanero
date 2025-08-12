@@ -139,9 +139,6 @@ class App(tk.Tk):
         join_frame = self.frames["JoinPage"]
         join_frame.complete_frame.place(x=60, y=300)
 
-
-
-
     # 텍스트 클릭 시 글씨 삭제
     def on_Text_click(self, text, string):
         if string in text.get("1.0", tk.END):
@@ -330,6 +327,7 @@ class firstPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
+
 
 # 로그인 화면 실행
 class LoginPage(tk.Frame):
@@ -812,11 +810,11 @@ class MyPage(tk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.current_tab = None  # 현재 선택된 탭
-
-        # 배경
-        self.configure(bg="black")
-
+        self.configure(bg="black")  # 배경
         self.name_text = ""  # 이름 저장
+
+        self.image_base64 = None
+
 
         # 상단 프로필 프레임
         self.FrameTop = tk.Frame(self, bg="black", height=240)
@@ -832,53 +830,58 @@ class MyPage(tk.Frame):
                                      font=("Arial", 11))
         self.follows_cnt_label.place(x=30, y=190)
 
-        #프로필 사진
-        self.profile_img = ImageTk.PhotoImage(Image.open(img_path + 'profile.png').resize((65, 65)))
-        self.profile_label = tk.Label(self.FrameTop, image=self.profile_img, fg="white", bg="black")
-        self.profile_label.place(x=380, y=70)  # 데이터 값 가져오기
+        # 프로필 사진
+        self.profile_label = tk.Label(self.FrameTop, fg="white", bg="black")
+        self.profile_label.place(x=360, y=55)  # 데이터 값 가져오기
 
         #프로필 수정 버튼
         self.edit_pfImg = ImageTk.PhotoImage(Image.open(img_path +'edit_pf.png').resize((130, 30)))
         self.edit_pfBtn = tk.Button(self, image=self.edit_pfImg, bd=0, relief="flat", highlightthickness=0,
-                               activebackground="black", command=self.show_edit_popup)
-        self.edit_pfBtn.place(x=320, y=200)
-
+                                    activebackground="black", command=self.show_edit_popup)
+        self.edit_pfBtn.place(x=310, y=200)
 
         # 프로필 편집 팝업 창
-        #★프레임 설정 변경 해야함☆
-        self.editframe = tk.Frame(self, width=400, height=300, bg="blue")
+        self.editframe = tk.Frame(self, bg="black")
+        self.editframe.place(x=310, y=120)
         self.editframe.place_forget()
+
+        self.edit_profileImg = ImageTk.PhotoImage(Image.open(img_path + 'edit_profile.png'))
+        self.frame = tk.Label(self.editframe, image=self.edit_profileImg, bg="black")
+        self.frame.image = self.edit_profileImg
+        self.frame.pack()
 
         self.namenptImg = ImageTk.PhotoImage(Image.open(img_path + 'namenpt.png'))
         self.namenptLabel = tk.Label(self.editframe, image=self.namenptImg, bg="black")
         self.namenptLabel.image = self.namenptImg
-        self.namenptLabel.place(x=30, y=90)
+        self.namenptLabel.place(x=27, y=150)
 
-        self.cancelImg = ImageTk.PhotoImage(Image.open(img_path + 'cancel.png').resize((50, 20)))
+        self.addprofileImg = ImageTk.PhotoImage(Image.open(img_path + 'addprofile.png'))
+        self.addprofileButton= tk.Button(self.editframe, image=self.addprofileImg,bd=0 ,bg="black",activebackground="black",
+                                         command= self.select_profile_image)
+        self.addprofileButton.image = self.addprofileImg
+        self.addprofileButton.place(x=305, y=160)
+
+
+        # 수정 취소 버튼
+        self.cancelImg = ImageTk.PhotoImage(Image.open(img_path + 'cancel2.png'))
         self.cancelBtn = tk.Button(self.editframe, image=self.cancelImg, bd=0, bg="black", activebackground="black",
                                    command=self.hide_edit_popup)
-        self.cancelBtn.place(x=12, y=17)
+        self.cancelBtn.place(x=10, y=5)
 
-
-        self.newnameLabel = tk.Label(self.editframe, fg="white", bg="black",  font=("고딕", 15, 'bold'))
-        self.newnameLabel.place(x=30, y=150)
-
-        self.newnameEntry = tk.Entry(self.editframe, width=20, fg="white", bg="black", font=("고딕", 15, 'bold'))
-        self.newnameEntry.place(x=50, y=125)
+        #이름 수정 entry
+        self.newnameEntry = tk.Entry(self.editframe, width=18, fg="white", bg="black", font=("고딕", 15, 'bold'), bd=0, highlightthickness=0)
+        self.newnameEntry.place(x=43, y=181)
         self.newnameEntry.insert(0, self.name_text)
         self.newnameEntry.bind('<Button-1>',
                                lambda e: self.controller.on_entry_click(self.newnameEntry, self.name_text))
         self.newnameEntry.bind('<FocusOut>',
                                lambda e: self.controller.on_focusout(self.newnameEntry, self.name_text))
-
-        self.doneImg = ImageTk.PhotoImage(Image.open(img_path + 'done.png').resize((70, 15)))
+        # 수정 완료 버튼
+        self.doneImg = ImageTk.PhotoImage(Image.open(img_path + 'done2.png'))
         self.doneBtn = tk.Button(self.editframe, image=self.doneImg, bd=0, bg="black", activebackground="black",
-                                 command=self.save_edit_data)
+                                 command= self.save_edit_data)
         self.doneBtn.image = self.doneImg
-        self.doneBtn.place(x=300, y=15)
-
-
-
+        self.doneBtn.place(x=320, y=5)
 
         # 탭 프레임(버튼 배치)
         self.FrameTabs = tk.Frame(self, bg="black", height=50)
@@ -910,24 +913,6 @@ class MyPage(tk.Frame):
         # 탭 별 프레임 생성
         self.FrameContent = tk.Frame(self, bg="black", height=450)
         self.FrameContent.pack(side="top", fill="x")
-
-        # def edit_name(self):
-        #     self.name_label.place.forget()
-        #     self.edit_nameImg.place.forget()
-        #
-        #     self.name_entry = tk.Entry(self.FrameTop, font=("Arial", 22, 'bold'))
-        #     self.name.insert(0, self.name_entry.get())
-        #     self.name_entry.place(x=30, y=140)
-        #
-        #     #이름 변경 확인 버튼
-        #     self.confirm_nameBtn = tk.Button(self.FrameTop, text="확인", command=self.save_name)
-        #     self.confirm_nameBtn.place(x=200, y=140)
-        #
-        # def save_name(self):
-        #     new_name = self.name_entry.get()
-        #     self.name_text = new_name
-        #     self.name_label.place(x=30, y=140)
-        #     self.edit_nameBtn.place(x=95, y=160)
 
         # 게시글 없을 시 프레임에 나타나는 메시지
         frame_messages = {
@@ -996,14 +981,11 @@ class MyPage(tk.Frame):
         self.update_user_info()
         self.hide_edit_popup()
 
-
     def update_user_info(self):
         msg = Message.create_get_userinfo_msg(self.controller.get_user_id())
-        # print(self.controller.get_user_id())
         res = self.controller.request_db(msg)
-        # print('res1')
-        # print(res)
-        # print(res['data']['name'])
+        print('res 확dls')
+        print(res)
 
         self.name_text = res['data']['name']
         self.name_label.config(text=self.name_text)
@@ -1011,29 +993,39 @@ class MyPage(tk.Frame):
         self.id_text = res['data']['id']
         self.id_label.config(text=self.id_text)
 
+        #팔로워 수 데이터 요청
         msg2 = Message.create_get_follows_msg(self.controller.get_user_id())
         res2 = self.controller.request_db(msg2)
-        self.follows_cnt_label.config(text=str(len(res2['data']))+ ' followers')
+        self.follows_cnt_label.config(text=str(len(res2['data'])) + ' followers')
 
-        # profile_img_path = msg.get('profile_img',img_path + 'profile_img.png')
-        # self.profile_img = ImageTk.PhotoImage(Image.open(profile_img_path).resize((65, 65)))
+        #변경된 프로필 이미지 프레임
+        profile_img_data = res['data'].get('profile_img')
+
+        print(profile_img_data)
+
+        #이미지가 저장되어 있다면?
+        if profile_img_data and profile_img_data != b'None':
+            img_io = self.controller.decode_image(profile_img_data)
+            pil_img = self.controller.crop_img_circle(Image.open(img_io).resize((70, 70)))
+        else: #이미지가 없을 경우 기본 이미지!
+            pil_img = Image.open(img_path + 'profileImg.png').resize((70, 70))
+
+        self.profile_img = ImageTk.PhotoImage(pil_img)
+        self.profile_label.config(image=self.profile_img)
+
+        # 프로필 수정된 이미지 데이터 요청
+        # msg3 = Message.create_update_profile(self.controller.get_user_id(), '', self.profile_img)
+        # res3 = self.controller.request_db(msg3)
+        # self.profile_img = res3['data'].get('profile_img')
         # self.profile_label.config(image=self.profile_img)
 
 
-    def apply_temp_msg(self):
-        new_name = self.data.get("user_name","")
-        if  new_name:
-            self.name_text = new_name
-            self.name_label.config(text=self.new_name)
-
-
-
-    #이름 변경
+    # 이름 변경
     def edit_name(self):
-        self.newnameLabel = tk.Label(self.editframe, fg="white", bg="black",  font=("고딕", 15, 'bold'))
+        self.newnameLabel = tk.Label(self.editframe, fg="white", bg="black", font=("고딕", 15, 'bold'))
         self.newnameLabel.place(x=30, y=220)
 
-        #변경할 이름 입력
+        # 변경할 이름 입력
         self.newnameEntry = tk.Entry(self.editframe, width=20, fg="white", bg="black", font=("고딕", 15, 'bold'))
         self.newnameEntry.place(x=30, y=250)
         self.newnameEntry.insert(0, self.name_text)
@@ -1042,29 +1034,76 @@ class MyPage(tk.Frame):
         self.newnameEntry.bind('<FocusOut>',
                                lambda e: self.controller.on_focusout(self.newnameEntry, self.name_text))
 
+    #새로운 이미지 파일 선택
+    def select_profile_image(self):
+        file_path = filedialog.askopenfilename(
+            title="파일 선택",
+            filetypes=(("모든 파일", "*.*"), ("이미지 파일", "*.png;*.jpg;*.jpeg"))
+        )
+
+        if not file_path:
+            return
+        try:
+            self.img = Image.open(file_path).resize((70, 70))  # 원하는 크기로 조절
+            self.img = self.controller.crop_img_circle(self.img)  # 원형으로 자르기
+
+            self.selected_photo = ImageTk.PhotoImage(self.img)  # 인스턴스 변수로 저장
+            self.profile_label.config(image=self.selected_photo)
+            self.selected_photo_path = file_path  # 이미지 경로 저장 (나중에 서버 전송용)
+
+            self.file_img = open(file_path, 'rb').read()
+            self.image_base64 = base64.b64encode(self.file_img)
+
+        except Exception as e:
+            print(f"이미지 열기 오류: {e}")
 
 
-    #변경된 이름, 이미지 저장
     def save_edit_data(self):
         new_name = self.newnameEntry.get().strip()
         if not new_name:
             print("이름 입력 없음")
             return
 
-        self.hide_edit_popup()
-        print(f"이름 수정 완료!: {self.name_text}")
+        self.doneBtn.config(state="disabled")
+        self.profile_label.config(image=self.profile_img)
+        print("이미지 확인")
+        print(self.image_base64)
+        if self.image_base64:
+            img_data = self.image_base64
+        elif self.image_base64 == None:
+            img_data = b'None'
 
-        #res = self.controller.request_db(msg)
-        res = self.controller.request_db(
-            Message.create_update_profile(self.controller.get_user_id(), new_name,''))
+        msg = Message.create_update_profile(
+                    user_id=self.controller.get_user_id(),
+                    user_name=new_name,
+                    profile_image=img_data
+        )
 
-        #이름 변경 성공
-        if res["status"]:
+        print("msg 확인")
+        print(msg)
+
+        t =threading.Thread(target=self._profile_worker, args=(msg,), daemon=True)
+        t.start()
+
+    def _profile_worker(self, msg):
+        res = self.controller.request_db(msg)
+
+        # ★ UI 갱신은 메인 스레드에서
+        self.after(0, self._on_profile_done, res)
+        # 여기서는 Tk 호출 금지
+
+    def _on_profile_done(self, res):
+        self.doneBtn.config(state="normal")
+
+        if res and res.get("status") == 1:
+            self.controller.show_frame(MyPage)
+            self.hide_edit_popup()
+            self.image_base64 = None
             self.update_user_info()
-
-        #이름 변경 실패
+            print("프로필 저장 성공")
         else:
-            print("이름 저장 실패:", res)
+            err = res.get("message") if isinstance(res, dict) else "Unknown error"
+            print("[PROFILE UPDATE 실패]", err)
 
 
     def show_edit_popup(self):
@@ -1072,14 +1111,6 @@ class MyPage(tk.Frame):
         self.newnameEntry.insert(0, self.name_text)
         self.editframe.place(relx=0.5, rely=0.5, anchor="center")
         self.editframe.tkraise()
-
-        # self.newnameEntry.bind('<Button-1>',
-        #                        lambda e: self.controller.on_entry_click(self.newnameEntry, self.name_text))
-        # self.newnameEntry.bind('<FocusOut>',
-        #                        lambda e: self.controller.on_focusout(self.newnameEntry, self.name_text))
-        #
-        # self.editframe.place(relx=0.5, rely=0.5, anchor="center")
-        # self.editframe.lift()
 
     def hide_edit_popup(self):
         self.editframe.place_forget()
@@ -2122,7 +2153,8 @@ class ChatRoomPage(tk.Frame):
                     now_day = datetime.datetime.strptime(str(messages["data"][i]["message_time"]).split(" ")[0], "%Y-%m-%d").day
 
                     # 이전 메시지와 날짜(일)가 다르면
-                    if prev_day == -1 or now_day != prev_day:
+                    # if prev_day == -1 or now_day != prev_day:
+                    if now_day != prev_day:
                         # 구분선 추가
                         self.create_sepline(self.scrollable_frame, datetime.datetime.strptime(str(msg["message_time"]).split(" ")[0], "%Y-%m-%d").date())
                         # 메시지 말풍선 gui 생성 후 도시하기
@@ -2150,12 +2182,13 @@ class ChatRoomPage(tk.Frame):
         메시지 전송하기
         """
         text = self.message_bar_entry.get()
+        my_id = self.controller.get_user_id()
 
         # 메시지를 작성했다면
         if text != self.msg_default_text and text:
             # 메시지 데이터 정의 후 메시지 전송하기
             data = MessageData.create_msg_data(
-                user_id=self.controller.get_user_id(), 
+                user_id=my_id, 
                 chatroom_id=self.chatroom_id, 
                 content=text,
                 image="",
@@ -2163,6 +2196,18 @@ class ChatRoomPage(tk.Frame):
             msg = Message.create_add_chat_msg(self.chatroom_id, data)
             res = self.controller.request_db(msg)
             self.message_bar_entry.delete(0, tk.END)
+
+        if self.chat_user1 == my_id:
+            to_user_id = self.chat_user2
+        else:
+            to_user_id = self.chat_user1
+
+        # notif = Message.create_add_notif_msg(
+        #     user_id=to_user_id,
+        #     from_user_id=self.controller.get_user_id(),
+        #     notif_type=EnumNotifType.MESSAGE,
+        #     concerned_id=
+        # )
 
     def send_image(self):
         img_path = filedialog.askopenfile()
