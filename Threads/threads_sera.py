@@ -680,13 +680,6 @@ class MyPage(tk.Frame):
         self.configure(bg="black") # 배경
         self.name_text = ""  # 이름 저장
 
-        #프로필 수정용 임시 데이터 🐧
-        # self.data = {
-        #     "user_name": "명수",
-        #     "profile_image": img_path + "북극알명수.png"
-        #  }
-
-
 
         # 상단 프로필 프레임
         self.FrameTop = tk.Frame(self, bg="black", height=240)
@@ -703,49 +696,61 @@ class MyPage(tk.Frame):
         self.follows_cnt_label.place(x=30, y=190)
 
         #프로필 사진
-        self.profile_img = ImageTk.PhotoImage(Image.open(img_path + 'profile.png').resize((65, 65)))
+        self.profile_img = ImageTk.PhotoImage(Image.open(img_path + 'profileImg.png').resize((70, 70)))
         self.profile_label = tk.Label(self.FrameTop, image=self.profile_img, fg="white", bg="black")
-        self.profile_label.place(x=380, y=70)  # 데이터 값 가져오기
+        self.profile_label.place(x=360, y=55)  # 데이터 값 가져오기
 
         #프로필 수정 버튼
         self.edit_pfImg = ImageTk.PhotoImage(Image.open(img_path +'edit_pf.png').resize((130, 30)))
         self.edit_pfBtn = tk.Button(self, image=self.edit_pfImg, bd=0, relief="flat", highlightthickness=0,
                                activebackground="black", command=self.show_edit_popup)
-        self.edit_pfBtn.place(x=320, y=200)
+        self.edit_pfBtn.place(x=310, y=200)
 
 
         # 프로필 편집 팝업 창
         #★프레임 설정 변경 해야함☆
-        self.editframe = tk.Frame(self, width=400, height=300, bg="blue")
+        self.editframe = tk.Frame(self, bg="black")
+        self.editframe.place(x=310, y=120)
         self.editframe.place_forget()
+
+        self.edit_profileImg = ImageTk.PhotoImage(Image.open(img_path + 'edit_profile.png'))
+        frame = tk.Label(self.editframe, image=self.edit_profileImg, bg="black")
+        frame.image = self.edit_profileImg
+        frame.pack()
 
         self.namenptImg = ImageTk.PhotoImage(Image.open(img_path + 'namenpt.png'))
         self.namenptLabel = tk.Label(self.editframe, image=self.namenptImg, bg="black")
         self.namenptLabel.image = self.namenptImg
-        self.namenptLabel.place(x=30, y=90)
+        self.namenptLabel.place(x=27, y=150)
 
+
+        self.addprogileImg = Image.PhotoImage(Image.open(img_path + 'addprofile.png'))
+        self.addprofileLabel = tk.Label(self.editframe, image=self.addprogileImg, bg="black")
+        self.addprofileLabel.image = self.addprogileImg
+        self.addprofileLabel.place(x=200, y=20)
+
+        #수정 취소 버튼
         self.cancelImg = ImageTk.PhotoImage(Image.open(img_path + 'cancel.png').resize((50, 20)))
         self.cancelBtn = tk.Button(self.editframe, image=self.cancelImg, bd=0, bg="black", activebackground="black",
                                    command=self.hide_edit_popup)
         self.cancelBtn.place(x=12, y=17)
 
-
-        self.newnameLabel = tk.Label(self.editframe, fg="white", bg="black",  font=("고딕", 15, 'bold'))
-        self.newnameLabel.place(x=30, y=150)
-
+        #402x294
         self.newnameEntry = tk.Entry(self.editframe, width=20, fg="white", bg="black", font=("고딕", 15, 'bold'))
-        self.newnameEntry.place(x=50, y=125)
+        self.newnameEntry.place(x=43, y=181)
         self.newnameEntry.insert(0, self.name_text)
         self.newnameEntry.bind('<Button-1>',
                                lambda e: self.controller.on_entry_click(self.newnameEntry, self.name_text))
         self.newnameEntry.bind('<FocusOut>',
                                lambda e: self.controller.on_focusout(self.newnameEntry, self.name_text))
-
+        #수정 완료 버튼
         self.doneImg = ImageTk.PhotoImage(Image.open(img_path + 'done.png').resize((70, 15)))
         self.doneBtn = tk.Button(self.editframe, image=self.doneImg, bd=0, bg="black", activebackground="black",
                                  command=self.save_edit_data)
         self.doneBtn.image = self.doneImg
         self.doneBtn.place(x=300, y=15)
+
+
 
 
 
@@ -907,7 +912,6 @@ class MyPage(tk.Frame):
         self.hide_edit_popup()
         print(f"이름 수정 완료!: {self.name_text}")
 
-        #res = self.controller.request_db(msg)
         res = self.controller.request_db(
             Message.create_update_profile(self.controller.get_user_id(), new_name,''))
 
@@ -925,14 +929,6 @@ class MyPage(tk.Frame):
         self.newnameEntry.insert(0, self.name_text)
         self.editframe.place(relx=0.5, rely=0.5, anchor="center")
         self.editframe.tkraise()
-
-        # self.newnameEntry.bind('<Button-1>',
-        #                        lambda e: self.controller.on_entry_click(self.newnameEntry, self.name_text))
-        # self.newnameEntry.bind('<FocusOut>',
-        #                        lambda e: self.controller.on_focusout(self.newnameEntry, self.name_text))
-        #
-        # self.editframe.place(relx=0.5, rely=0.5, anchor="center")
-        # self.editframe.lift()
 
     def hide_edit_popup(self):
         self.editframe.place_forget()
