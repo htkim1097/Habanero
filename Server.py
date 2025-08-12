@@ -110,6 +110,8 @@ class ThreadsServer:
                 return self.handle_get_chat_data(msg)
             elif msg_type == EnumMessageType.ADD_CHAT_DATA:
                 return self.handle_add_chat_data(msg)
+            elif msg_type == EnumMessageType.GET_COMMENTS:
+                return self.handle_get_comments(msg)
             
             else:
                 raise Exception("[오류:handle_data] - 클라이언트로부터 받은 데이터의 type 값에 오류가 있습니다.")
@@ -248,6 +250,7 @@ class ThreadsServer:
                     comment_cnt= len(comment_res),
                     writed_time=post[4],
                     image=post[2],
+                    parent_id=post[5]
                     )
                 datas[post[0]] = data
 
@@ -573,34 +576,45 @@ class ThreadsServer:
                 message=e
             )
     
-    # def sample(self, msg):
-    #     #m_type = EnumMessageType.추가한 타입 넣기
-    #
-    #     try:
-    #         query = """
-    #
-    #         """
-    #         params = (
-    #             msg["속성 명 1"],
-    #             msg["속성 명 2"],
-    #         )
-    #
-    #         res = self.send_query_safty(query=query, param=params)
-    #
-    #         return Message.create_response_msg(
-    #             #type=m_type,  # 위에서 m_type 수정 후 주석 풀어주기
-    #             status=EnumMsgStatus.SUCCESS,
-    #             data=""  # 클라이언트에 보내줄 데이터가 있을 때, MessageData Class에서 데이터 정의 후 보내준다.
-    #         )
-    #
-    #     except Exception as e:
-    #         print(f"[오류: 함수이름 ]- {e}")
-    #         return Message.create_response_msg(
-    #             #type=m_type,  # 위에서 m_type 수정 후 주석 풀어주기
-    #             status=EnumMsgStatus.FAILED,
-    #             message=e
-    #         )
+    def handle_get_comments(self, msg):
+        m_type = EnumMessageType.GET_COMMENTS
+    
+        try:
+            query = """
+            select * from post where parent_id = %s;
+            """
+            params = (
+                msg["post_id"],
+            )
+    
+            comments = self.send_query_safty(query=query, param=params)
 
+            datas = []
+            for cmt in comments:
+                data = MessageData.create_comment_data(
+                        comment_id=cmt[0],
+                        parent_id=cmt[5],
+                        user_id=cmt[3],
+                        content=cmt[1],
+                        writed_time=cmt[4]
+                    )
+                
+                datas.append(data)
+    
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.SUCCESS,
+                data=datas
+            )
+    
+        except Exception as e:
+            print(f"[오류:handle_add_chatroom]- {e}")
+            return Message.create_response_msg(
+                type=m_type,
+                status=EnumMsgStatus.FAILED,
+                message=e
+            )
+    
     def send_query(self, query):
         """
         sql 인젝션 위험. param을 추가한 send_query() 사용 권장.  

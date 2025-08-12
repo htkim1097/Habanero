@@ -20,6 +20,7 @@ class EnumMessageType:
     # 서버에서 동작을 구분할 수 있도록 타입을 추가해준다.
     UPDATE_PROFILE = 100
     ADD_LIKE = 16
+    GET_COMMENTS = 17
 
 class EnumMsgStatus:
     """
@@ -224,6 +225,16 @@ class Message:
             "post_id" : post_id,
         }
     
+    @classmethod
+    def create_get_comments(cls, post_id):
+        """
+        클라이언트 -> 서버  
+        post_id에 해당하는 모든 댓글을 가져온다.
+        """
+        return {
+            "type" : EnumMessageType.GET_COMMENTS,
+            "post_id" : post_id,
+        }
     
 
 class MessageData:
@@ -243,7 +254,7 @@ class MessageData:
         }
 
     @classmethod
-    def create_post_data(cls, id, content, like_cnt, comment_cnt, writed_time, image=None):
+    def create_post_data(cls, id, content, like_cnt, comment_cnt, writed_time, image=None, parent_id=None):
         """
         게시글 정보 데이터
         """
@@ -254,6 +265,7 @@ class MessageData:
             "like_cnt" : like_cnt,
             "comment_cnt" : comment_cnt,
             "writed_time" : writed_time,
+            "parent_id" : parent_id
         }
 
     @classmethod
@@ -291,6 +303,19 @@ class MessageData:
             "user_id1" : user_id1,
             "user_id2" : user_id2,
             "chatroom_date" : chatroom_date
+        }
+    
+    @classmethod
+    def create_comment_data(cls, comment_id, parent_id, user_id, content, writed_time):
+        """
+        댓글 데이터
+        """
+        return {
+            "comment_id" : comment_id,
+            "parent_id" : parent_id,
+            "user_id" : user_id,
+            "content" : content,
+            "writed_time" : writed_time
         }
     
 if __name__ == "__main__":
