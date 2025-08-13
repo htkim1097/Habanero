@@ -65,7 +65,7 @@ class App(tk.Tk):
         self.w_menu_my_img = ImageTk.PhotoImage(Image.open(img_path + 'home5-2.png'))
 
         # 임의로 넣은 아이디. 나중에 ""으로
-        self.__user_id = "ht"  # 유저 아이디
+        self.__user_id = "sr"  # 유저 아이디
 
         self.frames = {}
 
@@ -85,7 +85,7 @@ class App(tk.Tk):
         self.add_frame(PostDetailPage, self)
 
         # 첫 화면
-        self.show_frame(HomePage)
+        self.show_frame(firstPage)
 
     def add_frame(self, Frame, parent=None):
         """
@@ -338,15 +338,16 @@ class App(tk.Tk):
             return None
         
     def load_profile_img(self, id):
-        user_info = self.controller.request_db(Message.create_get_userinfo_msg(id))
+        user_info = self.request_db(Message.create_get_userinfo_msg(id))
 
         if not user_info:
             return None
 
         byte_image = user_info["data"]["profile_img"]
 
-        if user_info["status"] == EnumMsgStatus.SUCCESS and byte_image not in (None, 'None', b'None', '', b'', b"b'None'"):
-            image = self.controller.decode_image(byte_image)
+        if user_info["status"] == EnumMsgStatus.SUCCESS and byte_image not in (None, 'None', b'None', '', b'',
+                                                                               b"b'None'"):
+            image = self.decode_image(byte_image)
             profile_img = Image.open(image).resize((40, 40))
         else:
             profile_img = Image.open(img_path + "profileImg.png").resize((40, 40))
@@ -360,6 +361,15 @@ class firstPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
+
+        self.firstpage_img = ImageTk.PhotoImage(Image.open(img_path + "firstpage.png"))
+        firstpage_label = tk.Label(self, image=self.firstpage_img)
+        firstpage_label.pack(fill="both", expand=True)
+
+        self.after(2000, lambda: self.controller.show_frame(LoginPage))
+
+    def show_frame(self):
+        self.tkraise()
 
 
 # 로그인 화면 실행
@@ -789,8 +799,9 @@ class MyPage(tk.Frame):
         self.namenptLabel.place(x=27, y=150)
 
         self.addprofileImg = ImageTk.PhotoImage(Image.open(img_path + 'addprofile.png'))
-        self.addprofileButton= tk.Button(self.editframe, image=self.addprofileImg,bd=0 ,bg=Color.DARK_GRAY,activebackground=Color.DARK_GRAY,
-                                         command= self.select_profile_image)
+        self.addprofileButton = tk.Button(self.editframe, image=self.addprofileImg, bd=0, bg=Color.DARK_GRAY,
+                                          activebackground=Color.DARK_GRAY,
+                                          command=self.select_profile_image)
         self.addprofileButton.image = self.addprofileImg
         self.addprofileButton.place(x=305, y=160)
 
@@ -853,7 +864,7 @@ class MyPage(tk.Frame):
         self.frames = {}
 
         for name in ["Threads", "Replies", "Media", "Reposts"]:
-            frame = tk.Frame(self.FrameContent, bd=0, relief="flat", highlightthickness=0, bg=Color.DARK_GRAY)
+            frame = tk.Frame(self.FrameContent, bd=0, relief="flat", highlightthickness=0, bg='blue')
             frame.place(x=0, y=0, relwidth=1, relheight=1)
 
             # 메시지 라벨
@@ -898,6 +909,125 @@ class MyPage(tk.Frame):
 
         self.current_tab = tab_name
 
+        self.profileimg = ImageTk.PhotoImage(Image.open(img_path + 'profileImg.png').resize((40, 40)))
+        self.commentimg = ImageTk.PhotoImage(Image.open(img_path + 'reply.png').resize((20, 20)))
+        self.likeimg = ImageTk.PhotoImage(Image.open(img_path + 'like.png').resize((20, 20)))
+        self.likedimg = ImageTk.PhotoImage(Image.open(img_path + 'like_red.png').resize((20, 17)))
+        self.repostimg = ImageTk.PhotoImage(Image.open(img_path + 'repost.png').resize((20, 20)))
+        self.msgimg = ImageTk.PhotoImage(Image.open(img_path + 'msg.png').resize((20, 20)))
+        self.like_images = [self.likeimg, self.likedimg]  # 0: 빈 하트, 1: 빨간 하트
+        self.like_state = 0
+
+        #기존 메시지 삭제하기
+        msg = Message.create_get_feed_msg(self.controller.get_user_id())
+        res = self.controller.request_db(msg)
+        # print("123")
+        # print(res)
+
+        for feed_data in res["data"].values():
+            if feed_data["id"] == self.controller.get_user_id():
+                if tab_name == "Threads":
+                    for m in self.frames["Threads"].winfo_children():
+                        m.destroy()
+
+                leftFrame = tk.Frame(self.frames["Threads"], bg=Color.DARK_GRAY, width=50)
+                leftFrame.pack(side="left", anchor="n", padx=10)
+
+                rightFrame = tk.Frame(self.frames["Threads"], bg=Color.DARK_GRAY)
+                rightFrame.pack(side="left", fill="x")
+
+                # 작성자의 프로필 이미지 받아오기
+                msg = Message.create_get_userinfo_msg(feed_data["id"])
+                user_info = self.controller.request_db(msg)
+                profile_img_path = None
+                pImg = user_info["data"]["profile_img"]
+
+                if user_info["status"] == EnumMsgStatus.SUCCESS and pImg not in (None, 'None', b'None', '', b'',
+                                                                                 b"b'None'"):
+                    bio = self.controller.decode_image(pImg)
+                    profile_img_path = Image.open(bio).resize((40, 40))
+                else:
+                    profile_img_path = Image.open(img_path + "profileImg.png").resize((40, 40))
+                profile_img_path = self.controller.crop_img_circle(profile_img_path)
+                self.profile_img = ImageTk.PhotoImage(profile_img_path)
+                self.img = self.controller.load_profile_img(self.controller.get_user_id())
+
+                self.profile_img = ImageTk.PhotoImage(self.img)
+
+
+                imgLabel = tk.Label(leftFrame,image= self.profile_img, bg=Color.DARK_GRAY)
+                imgLabel.pack(anchor="n")
+                imgLabel.image = self.profile_img
+
+                contentArea = tk.Frame(rightFrame, bg=Color.DARK_GRAY)
+                contentArea.pack(fill="x", anchor="w")
+
+                topInfo = tk.Frame(contentArea, bg=Color.DARK_GRAY)
+                topInfo.pack(anchor="w", pady=(0, 2))
+
+                idLabel = tk.Label(topInfo, text=feed_data["id"], fg="white", bg=Color.DARK_GRAY, font=("Arial", 11))
+                idLabel.pack(side="left")
+
+                # 시간 계산
+                str_time = str(feed_data["writed_time"])
+                post_time = datetime.datetime.strptime(str_time, "%Y-%m-%d %H:%M:%S")
+                now = datetime.datetime.now()
+                diff = now - post_time
+                if diff.days >= 1:
+                   postTime = f"{diff.days} day ago"
+                elif diff.seconds >= 3600:
+                   postTime = f"{diff.seconds // 3600}h"
+                elif diff.seconds >= 60:
+                   postTime = f"{diff.seconds // 60}m"
+                else:
+                   postTime = f"{diff.seconds}s"
+
+                timeLabel = tk.Label(topInfo, text=postTime, fg="gray", bg=Color.DARK_GRAY, font=("Arial", 9))
+                timeLabel.pack(side="left", padx=(8, 0))
+
+                # 게시글 내용
+                feedLabel = tk.Label(contentArea, text=feed_data["content"], fg="white", bg=Color.DARK_GRAY,
+                                    wraplength=400, justify="left", font=("맑은고딕", 11))
+                feedLabel.pack(anchor="w", pady=(0, 10))
+
+                # 게시글 이미지(decode_image 함수 사용 버전)
+                pil_img = self.controller.decode_image(feed_data["image"])
+
+                if pil_img is not None:
+                    image = Image.open(pil_img).resize((300, 300))
+                    self.img = ImageTk.PhotoImage(image)
+                    imgLabel = tk.Label(contentArea, image=self.img, bg=Color.DARK_GRAY)
+                    imgLabel.pack(anchor="w", pady=(0, 10))
+
+                # 버튼 영역(좋아요, 댓글, 리포스트, 공유 버튼)
+                btnFrame = tk.Frame(rightFrame, bg=Color.DARK_GRAY)
+                btnFrame.pack(anchor="w", pady=(0, 5))
+
+                self.likeBtn = tk.Button(btnFrame, image=self.like_images[self.like_state], bd=0,
+                                        background=Color.DARK_GRAY,
+                                        activebackground=Color.DARK_GRAY, command=self.toggle_like)
+                self.likeBtn.pack(side="left")
+
+                self.likeCnt = tk.Label(btnFrame, text=feed_data["like_cnt"], fg="white", bg=Color.DARK_GRAY)
+                self.likeCnt.pack(side="left", padx=(2, 20))
+
+                commentBtn = tk.Button(btnFrame, image=self.commentimg, bd=0, background=Color.DARK_GRAY,
+                                      activebackground=Color.DARK_GRAY)
+                commentBtn.pack(side="left")
+                commentCnt = tk.Label(btnFrame, text=feed_data["comment_cnt"], fg="white", bg=Color.DARK_GRAY)
+                commentCnt.pack(side="left", padx=(2, 15))
+
+                repostBtn = tk.Button(btnFrame, image=self.repostimg, bd=0, background=Color.DARK_GRAY,
+                                     activebackground=Color.DARK_GRAY)
+                repostBtn.pack(side="left", padx=(0, 20))
+
+                msgBtn = tk.Button(btnFrame, image=self.msgimg, bd=0, background=Color.DARK_GRAY,
+                                  activebackground=Color.DARK_GRAY)
+                msgBtn.pack(side="left")
+
+
+
+
     # 프레임 전환
     def show_sub_frame(self, frames_name):
         for name, frame in self.frames.items():
@@ -910,6 +1040,7 @@ class MyPage(tk.Frame):
         self.hide_edit_popup()
 
     def update_user_info(self):
+        #이름
         msg = Message.create_get_userinfo_msg(self.controller.get_user_id())
         res = self.controller.request_db(msg)
 
@@ -925,13 +1056,14 @@ class MyPage(tk.Frame):
         self.follows_cnt_label.config(text=str(len(res2['data'])) + ' followers')
 
         #변경된 프로필 이미지 프레임
-        profile_img_data = res['data'].get('profile_img')
+        profile_img_data = res['data']['profile_img']
 
         #이미지가 저장되어 있다면?
         if profile_img_data and profile_img_data != b'None':
             img_io = self.controller.decode_image(profile_img_data)
             pil_img = self.controller.crop_img_circle(Image.open(img_io).resize((70, 70)))
-        else: #이미지가 없을 경우 기본 이미지!
+        # 이미지가 없을 경우 기본 이미지!
+        else:
             pil_img = Image.open(img_path + 'profileImg.png').resize((70, 70))
 
         self.profile_img = ImageTk.PhotoImage(pil_img)
@@ -999,7 +1131,21 @@ class MyPage(tk.Frame):
 
     def hide_edit_popup(self):
         self.editframe.place_forget()
-        
+
+    def toggle_like(self):
+        # 좋아요 상태 토글
+        self.like_state = 1 - self.like_state
+        self.likeBtn.config(image=self.like_images[self.like_state])
+
+        # 좋아요 수 변경
+        current_likes = int(self.likeCnt.cget("text"))
+        if self.like_state == 1:
+            current_likes += 1
+        else:
+            current_likes -= 1
+        self.likeCnt.config(text=str(current_likes))
+
+
 # 스레드 페이지
 class PostDetailPage(tk.Frame):
     def __init__(self, parent, controller):

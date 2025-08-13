@@ -1,3 +1,5 @@
 __pycache__/config.cpython-313.pyc
 __pycache__/Msg.cpython-313.pyc
 *.pyc
+/Threads/__pycache__
+Threads/__pycache__/threads_sera.cpython-313.pyc
