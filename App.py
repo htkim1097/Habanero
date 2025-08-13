@@ -11,7 +11,6 @@ from Msg import *
 import Config
 from copy import deepcopy
 import datetime
-from tkinter import filedialog
 import base64, io
 
 # 영문 폰트 SF Pro text, 한글폰트 Apple SD Gothic Neo
@@ -65,7 +64,7 @@ class App(tk.Tk):
         self.w_menu_my_img = ImageTk.PhotoImage(Image.open(img_path + 'home5-2.png'))
 
         # 임의로 넣은 아이디. 나중에 ""으로
-        self.__user_id = "sr"  # 유저 아이디
+        self.__user_id = ""  # 유저 아이디
 
         self.frames = {}
 
@@ -85,7 +84,7 @@ class App(tk.Tk):
         self.add_frame(PostDetailPage, self)
 
         # 첫 화면
-        self.show_frame(firstPage)
+        self.show_frame(LoginPage)
 
     def add_frame(self, Frame, parent=None):
         """
@@ -1158,32 +1157,41 @@ class PostDetailPage(tk.Frame):
         self.backImg = ImageTk.PhotoImage(Image.open(img_path + 'back_black.png'))
 
         # 뒤로 가기 버튼
-        back = tk.Button(self, image=self.backImg, bd=0, background=Color.DARK_GRAY, activebackground=Color.DARK_GRAY,
+        back = tk.Button(self, image=self.backImg, bd=0, background="black", activebackground=Color.DARK_GRAY,
                          command=lambda: self.controller.show_frame(HomePage))
         back.pack(anchor="w", padx=10, pady=10)
 
         # 본문 영역 (스크롤)
-        self.container = tk.Frame(self, bg=Color.DARK_GRAY)
+        self.container = tk.Frame(self, bg="black")
         self.container.pack(fill="both", expand=True)
 
-        self.canvas = tk.Canvas(self.container, bg=Color.DARK_GRAY, highlightthickness=0)
+        self.canvas = tk.Canvas(self.container, bg="black", highlightthickness=0)
         self.vbar = tk.Scrollbar(self.container, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.vbar.set)
         self.vbar.pack(side="right", fill="y")
         self.canvas.pack(side="left", fill="both", expand=True)
 
-        self.body = tk.Frame(self.canvas, bg=Color.DARK_GRAY)
+        self.body = tk.Frame(self.canvas, bg="black")
         self.win = self.canvas.create_window((0, 0), window=self.body, anchor="nw")
         self.body.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
         self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfigure(self.win, width=e.width))
 
-        # 본문 위젯 자리(동적으로 갈아끼움)
-        self.title_lbl = tk.Label(self.body, text="", fg="white", bg=Color.DARK_GRAY, font=("Arial", 14, "bold"))
-        self.title_lbl.pack(anchor="w", padx=12, pady=(6,2))
+        # 본문 내용
+        top_frame = tk.Frame(self.body, bg="black")
+        top_frame.pack(side="top", fill="x")
+
+        self.profile_lbl = tk.Label(top_frame,image="", fg="white", bg="black", font=("Arial", 14))
+        self.profile_lbl.pack(side="left", anchor="w", padx=(15, 5), pady=(6, 2))
+
+        self.id_lbl = tk.Label(top_frame, text="", fg="white", bg="black", font=("Arial", 14))
+        self.id_lbl.pack(side="left", anchor="w", padx=(5, 10), pady=(6,2))
+
+        self.time_lbl = tk.Label(top_frame, text="시간 들어갈 자리", fg="gray", bg="black", font=("Arial", 10))
+        self.time_lbl.pack(side="left", anchor="w", pady=(6,2))
 
         self.content_lbl = tk.Label(self.body, text="", fg="white", bg=Color.DARK_GRAY,
                                     wraplength=430, justify="left", font=("맑은고딕", 12))
-        self.content_lbl.pack(anchor="w", padx=12, pady=(0,10))
+        self.content_lbl.pack(anchor="w", padx=12, pady=(15,10))
 
         self.image_lbl = tk.Label(self.body, bg=Color.DARK_GRAY)
         self.image_lbl.pack(anchor="w", padx=12, pady=(0,10))
@@ -1192,32 +1200,27 @@ class PostDetailPage(tk.Frame):
         sep.pack(fill="x", padx=8, pady=10)
 
         # 댓글 목록 영역
-        self.comments_container = tk.Frame(self.body, bg=Color.DARK_GRAY)
+        self.comments_container = tk.Frame(self.body, bg="black")
         self.comments_container.pack(fill="x", padx=8, pady=(0,10))
 
         # 댓글 입력
-        entry_frame = tk.Frame(self, bg=Color.DARK_GRAY)
+        entry_frame = tk.Frame(self, bg="black")
         entry_frame.pack(side="bottom", fill="x")
 
         msg = Message.create_get_userinfo_msg(self.controller.get_user_id())
         res = self.controller.request_db(msg)
-        pImg = res["data"]["profile_img"]
+        self.profile_path = None
 
-        # 프로필 사진이 없다면 기본 이미지
-        profile_path = Image.open(img_path + 'profileImg.png').resize((40,40))
-
-        # 서버에서 프로필 이미지가 제대로 왔다면 디코드 후 사용
-        if pImg not in (None, 'None', b'None', '', b'', b"b'None'"):
+        # 서버에서 이미지가 제대로 왔다면 디코드 후 사용
+        if res["data"] not in (None, 'None', b'None', '', b'', b"b'None'"):
+            pImg = res["data"]["profile_img"]
             bio = self.controller.decode_image(pImg)
-            if bio:
-                try:
-                    profile_path = Image.open(bio).resize((40, 40))
+            self.profile_path = Image.open(bio).resize((40, 40))
+        else:
+            self.profile_path = Image.open(img_path + 'profileImg.png').resize((40, 40))
 
-                except Exception as e:
-                    print("프로필 이미지 열기 실패:", e)
-
-        profile_path = self.controller.crop_img_circle(profile_path)
-        self.Img = ImageTk.PhotoImage(profile_path)
+        self.profile_path = self.controller.crop_img_circle(self.profile_path)
+        self.Img = ImageTk.PhotoImage(self.profile_path)
         self.writer_img = tk.Label(entry_frame, image=self.Img, bg=Color.DARK_GRAY)
         self.writer_img.pack(side="left", anchor="w", padx=(10,2), pady=10)
 
@@ -1235,8 +1238,44 @@ class PostDetailPage(tk.Frame):
         self.post_id = post_id
         self.post_data = feed_data
 
-        # 제목/본문
-        self.title_lbl.config(text=feed_data["id"])
+        # 프로필 사진
+        user_info = self.controller.request_db(Message.create_get_userinfo_msg(feed_data["id"]))
+        pImg = user_info["data"]["profile_img"]
+
+        # 기본 이미지
+        profile_img = Image.open(img_path + "profileImg.png").resize((40, 40))
+        if pImg not in (None, 'None', b'None', '', b'', b"b'None'"):
+            bio = self.controller.decode_image(pImg)
+            if bio:
+                try:
+                    profile_img = Image.open(bio).resize((40, 40))
+                except Exception as e:
+                    print("프로필 이미지 열기 실패:", e)
+
+        profile_img = self.controller.crop_img_circle(profile_img)
+        profile_photo = ImageTk.PhotoImage(profile_img)
+        self.profile_lbl.config(image=profile_photo)
+        self.profile_lbl.image = profile_photo
+
+        # 아이디
+        self.id_lbl.config(text=feed_data["id"])
+
+        # 작성 시간
+        str_time = str(feed_data["writed_time"])
+        post_time = datetime.datetime.strptime(str_time, "%Y-%m-%d %H:%M:%S")
+        now = datetime.datetime.now()
+        diff = now - post_time
+        if diff.days >= 1:
+            postTime = f"{diff.days} day ago"
+        elif diff.seconds >= 3600:
+            postTime = f"{diff.seconds // 3600}h"
+        elif diff.seconds >= 60:
+            postTime = f"{diff.seconds // 60}m"
+        else:
+            postTime = f"{diff.seconds}s"
+        self.time_lbl.config(text=postTime)
+
+        # 본문
         self.content_lbl.config(text=feed_data["content"])
 
         # 이미지
@@ -1661,22 +1700,19 @@ class PostFeed(tk.Frame):
         # 99999999999999999999
         msg = Message.create_get_userinfo_msg(self.controller.get_user_id())
         res = self.controller.request_db(msg)
-        pImg = res["data"]["profile_img"]
 
-        # 프로필 사진이 없다면 기본 이미지
-        profile_path = Image.open(img_path + 'profileImg.png').resize((40, 40))
+        self.profile_path = None
 
         # 서버에서 이미지가 제대로 왔다면 디코드 후 사용
-        if pImg not in (None, 'None', b'None', '', b'', b"b'None'"):
+        if res["data"] not in (None, 'None', b'None', '', b'', b"b'None'"):
+            pImg = res["data"]["profile_img"]
             bio = self.controller.decode_image(pImg)
-            if bio:
-                try:
-                    profile_path = Image.open(bio).resize((40, 40))
-                except Exception as e:
-                    print("프로필 이미지 열기 실패:", e)
+            self.profile_path = Image.open(bio).resize((40, 40))
+        else:
+            self.profile_path = Image.open(img_path + 'profileImg.png').resize((40, 40))
 
-        profile_path = self.controller.crop_img_circle(profile_path)
-        self.profileimg = ImageTk.PhotoImage(profile_path)
+        self.profile_path = self.controller.crop_img_circle(self.profile_path)
+        self.profileimg = ImageTk.PhotoImage(self.profile_path)
         imgLabel = tk.Label(leftFrame, image=self.profileimg, bg=Color.DARK_GRAY)
         imgLabel.pack(anchor="n", padx=10, pady=10)
 
@@ -1725,7 +1761,7 @@ class PostFeed(tk.Frame):
             self.img = Image.open(file_path).resize((300, 300))  # 원하는 크기로 조절
             self.selected_photo = ImageTk.PhotoImage(self.img)  # 인스턴스 변수로 저장
             self.photoLabel.config(image=self.selected_photo)
-            self.selected_photo_path = file_path  # 이미지 경로 저장 (나중에 서버 전송용)
+            self.selected_photo_path = file_path  # 이미지 경로 저장
 
             reduce_image = self.controller.reduce_image_size(self.img, 20)
 
@@ -1744,7 +1780,7 @@ class PostFeed(tk.Frame):
         # 버튼 중복 클릭 방지
         self.postBtn.config(state="disabled")
 
-        # 이미지: 없으면 명시적으로 None 표기 (서버에서 처리)
+        # 이미지: 없으면 명시적으로 None 표기
         img_data = self.image_base64 if self.image_base64 else b'None'
 
         msg = Message.create_post_msg(
@@ -2347,6 +2383,7 @@ class ActivityPage(tk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.activitypageImg = ImageTk.PhotoImage(Image.open(img_path + 'activitypage.png'))
+        self.config(bg="aqua")
 
         label = tk.Label(self, image=self.activitypageImg)
         label.pack()
