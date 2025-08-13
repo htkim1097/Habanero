@@ -150,7 +150,9 @@ class App(tk.Tk):
         """
         이미지를 원형으로 자른다.
         """
-        mask_img = Image.new('L', image.size, color=Color.DARK_GRAY)
+        image = self.reduce_image_size(image, 5)
+
+        mask_img = Image.new('L', image.size, color="black")
 
         x = mask_img.width / 2
         y = mask_img.height / 2
@@ -174,8 +176,7 @@ class App(tk.Tk):
                 value = mask_pix[x, y]
                 if value == 0:
                     image_pix[x, y] = (0, 0, 0, 0)  # 투명 값 설정
-        image = self.reduce_image_size(image, 5)
-        
+        image.save("dfdf.png")
         return image
 
     def request_db(self, msg):
@@ -337,7 +338,7 @@ class App(tk.Tk):
             return None
         
     def load_profile_img(self, id):
-        user_info = self.controller.request_db(Message.create_get_userinfo_msg(id))
+        user_info = self.request_db(Message.create_get_userinfo_msg(id))
 
         if not user_info:
             return None
@@ -345,12 +346,12 @@ class App(tk.Tk):
         byte_image = user_info["data"]["profile_img"]
 
         if user_info["status"] == EnumMsgStatus.SUCCESS and byte_image not in (None, 'None', b'None', '', b'', b"b'None'"):
-            image = self.controller.decode_image(byte_image)
+            image = self.decode_image(byte_image)
             profile_img = Image.open(image).resize((40, 40))
         else:
             profile_img = Image.open(img_path + "profileImg.png").resize((40, 40))
 
-        return profile_img
+        return self.crop_img_circle(profile_img)
 
 
 
@@ -1720,9 +1721,15 @@ class MessagesPage(tk.Frame):
 
     def show_frame(self):
         self.tkraise()
-        
-        friends = self.controller.request_db(Message.create_get_follows_msg(self.controller.get_user_id()))
+        msg = Message.create_get_follows_msg(self.controller.get_user_id())
+        t = threading.Thread(target=self.profile_worker, args=(msg,), daemon=True)
+        t.start()
 
+    def profile_worker(self, msg):
+        friends = self.controller.request_db(msg)
+        self.after(0, self.on_profile_done, friends)
+
+    def on_profile_done(self, friends):
         if len(friends["data"]) > 0:
             self.load_chat_rooms(friends)
         else:
@@ -1743,6 +1750,8 @@ class MessagesPage(tk.Frame):
         new_message_btn.place(x=180, y=580)
 
     def load_chat_rooms(self, friends):
+
+
         # 목록 제거
         for widget in self.scrollable_frame.winfo_children():
             widget.destroy()
@@ -1776,12 +1785,12 @@ class MessagesPage(tk.Frame):
             last_chat = chat_data["data"][-1]["content"]
             last_chat_date = chat_data["data"][-1]["message_time"]
 
-            frame = self.create_chatroom_frame(another_id, user_name, user_profile_img, last_chat, last_chat_date, chatroom_info)
+            frame = self.create_chatroom_frame(another_id, user_name, last_chat, last_chat_date, chatroom_info)
             frame.pack(fill="x", pady=2, padx=5)
             self.bind_mousewheel_recursive(frame)
 
-    def create_chatroom_frame(self, id, name, profile_img, last_msg, last_date, chatroom_info):
-        frame = ChatRoomItemFrame(self.scrollable_frame, self.controller, id, name, profile_img, last_msg, last_date, chatroom_info)
+    def create_chatroom_frame(self, id, name, last_msg, last_date, chatroom_info):
+        frame = ChatRoomItemFrame(self.scrollable_frame, self.controller, id, name, last_msg, last_date, chatroom_info)
         return frame
 
     def bind_mousewheel_recursive(self, widget):
@@ -1801,19 +1810,16 @@ class ChatRoomItemFrame(tk.Frame):
     """
     채팅방 프레임
     """
-    def __init__(self, parent, controller, id, name, profile_img, last_msg, last_datetime, chatroom_info):
+    def __init__(self, parent, controller, id, name, last_msg, last_datetime, chatroom_info):
         super().__init__(parent)
         self.controller = controller
         self.config(bg="#1e1e1e", relief="flat", highlightbackground="gray", highlightthickness=0)
         self.frame_id = id
         self.chatroom_info = chatroom_info
 
-        try:
-            img = Image.open(self.controller.load_profile_img()).resize((40, 40))
-        except:
-            img = Image.open(img_path + "noImageMan.png").resize((40, 40))  # 이미지 불러오기 실패 시
+        self.img = self.controller.load_profile_img(id).resize((40, 40))
 
-        croped_img = self.controller.crop_img_circle(img)
+        croped_img = self.controller.crop_img_circle(self.img)
         self.profile_photo = ImageTk.PhotoImage(croped_img)
         image_label = tk.Label(self, image=self.profile_photo , bg="#1e1e1e")
         image_label.pack(side="left", padx=10, pady=5)
@@ -1846,7 +1852,7 @@ class MsgFriendsPage(tk.Frame):
         self.controller = controller
         self.parent = parent
         self.selected_friend = None
-        # self.friends_list = []
+        self.friends_list = []
 
         self.cancel_img = ImageTk.PhotoImage(Image.open(img_path + 'cancel.png'))
         self.new_message_text_img = ImageTk.PhotoImage(Image.open(img_path + 'newMessageText.png'))
@@ -1901,15 +1907,14 @@ class MsgFriendsPage(tk.Frame):
     def on_click_cancel(self):
         self.controller.show_frame(MessagesPage)
 
-    def load_friends(self):
-        self.selected_friend = None
-
-        msg = Message.create_get_follows_msg(self.controller.get_user_id())
+    def profile_worker(self, msg):
         res = self.controller.request_db(msg)
+        self.after(0, self.on_profile_done, res)
 
+    def on_profile_done(self, res):
         for widget in self.scrollable_frame.winfo_children():
             widget.destroy()
-        # self.friends_list.clear()
+        self.friends_list.clear()
 
         for friend in res["data"]:
             msg = Message.create_get_userinfo_msg(friend[0])
@@ -1920,12 +1925,15 @@ class MsgFriendsPage(tk.Frame):
             frame.pack(fill="x", pady=2, padx=5)
             self.bind_mousewheel_recursive(frame)
 
-        # for f in self.friends_list:
-        #     f.pack(fill="x", pady=2, padx=5)
+    def load_friends(self):
+        self.selected_friend = None
+        msg = Message.create_get_follows_msg(self.controller.get_user_id())
+        t = threading.Thread(target=self.profile_worker, args=(msg,), daemon=True)
+        t.start()
 
     def create_friend_item(self, id, name, profile_img):
         frame = FriendFrame(self.scrollable_frame, self, id, name, profile_img)
-        # self.friends_list.append(frame)
+        self.friends_list.append(frame)
         return frame
 
     def bind_mousewheel_recursive(self, widget):

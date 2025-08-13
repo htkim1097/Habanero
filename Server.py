@@ -379,7 +379,8 @@ class ThreadsServer:
         """
         m_type = EnumMessageType.GET_FOLLOWS
         try:
-            res = self.send_query(f"select following_id from follow where follower_id = '{msg["id"]}'")
+            # res = self.send_query(f"select following_id from user where follower_id = '{msg["id"]}'")
+            res = self.send_query(f"select user_id from user")
             
             return Message.create_response_msg(
                 type=m_type,
@@ -626,8 +627,11 @@ class ThreadsServer:
         
     def handle_update_profile(self, msg):
         m_type = EnumMessageType.UPDATE_PROFILE
-    
+
         try:
+            query = ""
+            params = None
+
             if msg["user_name"]:
                 query = """
                 update user set name = %s where user_id = %s;
@@ -636,6 +640,11 @@ class ThreadsServer:
                     msg["user_name"],
                     msg["user_id"],
                 )
+            if query:
+                res = self.send_query_safty(query=query, param=params)
+
+            query = ""
+            params = None
 
             if msg["profile_image"]:
                 query = """
@@ -645,9 +654,9 @@ class ThreadsServer:
                     msg["profile_image"],
                     msg["user_id"],
                 )
-                print("update............")
-    
-            res = self.send_query_safty(query=query, param=params)
+                
+            if query:
+                res = self.send_query_safty(query=query, param=params)
     
             return Message.create_response_msg(
                 type=m_type,
