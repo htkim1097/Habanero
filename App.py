@@ -2167,7 +2167,7 @@ class ChatRoomPage(tk.Frame):
         self.chat_user2 = None
         self.created_date = None
         self.isOnFrame = False
-        self.chat_update_interval = 0.5
+        self.chat_update_interval = 1
         self.message_list = []
         self.last_message_time = ""
 
