@@ -865,7 +865,7 @@ class MyPage(tk.Frame):
 
         for name in ["Threads", "Replies", "Media", "Reposts"]:
             frame = tk.Frame(self.FrameContent, bd=0, relief="flat", highlightthickness=0, bg='blue')
-            frame.place(x=0, y=0, relwidth=1, relheight=1)
+            frame.place(x=0, y=0)
 
             # 메시지 라벨
             label = tk.Label(frame, text=frame_messages[name], fg="gray", bg=Color.DARK_GRAY, font=("Arial", 12))
@@ -921,8 +921,6 @@ class MyPage(tk.Frame):
         #기존 메시지 삭제하기
         msg = Message.create_get_feed_msg(self.controller.get_user_id())
         res = self.controller.request_db(msg)
-        # print("123")
-        # print(res)
 
         for feed_data in res["data"].values():
             if feed_data["id"] == self.controller.get_user_id():
@@ -1024,9 +1022,6 @@ class MyPage(tk.Frame):
                 msgBtn = tk.Button(btnFrame, image=self.msgimg, bd=0, background=Color.DARK_GRAY,
                                   activebackground=Color.DARK_GRAY)
                 msgBtn.pack(side="left")
-
-
-
 
     # 프레임 전환
     def show_sub_frame(self, frames_name):
