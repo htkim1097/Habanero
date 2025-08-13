@@ -2352,6 +2352,7 @@ class ActivityPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
+        self.config(bg=Color.DARK_GRAY)
         self.activitypageImg = ImageTk.PhotoImage(Image.open(img_path + 'activitypage.png'))
 
         label = tk.Label(self, image=self.activitypageImg)
