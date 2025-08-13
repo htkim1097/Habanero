@@ -1104,7 +1104,7 @@ class MyPage(tk.Frame):
         if res and res.get("status") == EnumMsgStatus.SUCCESS:
             self.hide_edit_popup()
             self.image_base64 = None
-            self.update_user_info() 
+            self.update_user_info()
 
     def show_edit_popup(self):
         self.newnameEntry.delete(0, tk.END)
