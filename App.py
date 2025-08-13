@@ -11,7 +11,6 @@ from Msg import *
 import Config
 from copy import deepcopy
 import datetime
-from tkinter import filedialog
 import base64, io
 
 # 영문 폰트 SF Pro text, 한글폰트 Apple SD Gothic Neo
@@ -65,7 +64,7 @@ class App(tk.Tk):
         self.w_menu_my_img = ImageTk.PhotoImage(Image.open(img_path + 'home5-2.png'))
 
         # 임의로 넣은 아이디. 나중에 ""으로
-        self.__user_id = "ht"  # 유저 아이디
+        self.__user_id = ""  # 유저 아이디
 
         self.frames = {}
 
@@ -85,7 +84,7 @@ class App(tk.Tk):
         self.add_frame(PostDetailPage, self)
 
         # 첫 화면
-        self.show_frame(HomePage)
+        self.show_frame(LoginPage)
 
     def add_frame(self, Frame, parent=None):
         """
@@ -1055,23 +1054,18 @@ class PostDetailPage(tk.Frame):
 
         msg = Message.create_get_userinfo_msg(self.controller.get_user_id())
         res = self.controller.request_db(msg)
-        pImg = res["data"]["profile_img"]
+        self.profile_path = None
 
-        # 프로필 사진이 없다면 기본 이미지
-        profile_path = Image.open(img_path + 'profileImg.png').resize((40,40))
-
-        # 서버에서 프로필 이미지가 제대로 왔다면 디코드 후 사용
-        if pImg not in (None, 'None', b'None', '', b'', b"b'None'"):
+        # 서버에서 이미지가 제대로 왔다면 디코드 후 사용
+        if res["data"] not in (None, 'None', b'None', '', b'', b"b'None'"):
+            pImg = res["data"]["profile_img"]
             bio = self.controller.decode_image(pImg)
-            if bio:
-                try:
-                    profile_path = Image.open(bio).resize((40, 40))
+            self.profile_path = Image.open(bio).resize((40, 40))
+        else:
+            self.profile_path = Image.open(img_path + 'profileImg.png').resize((40, 40))
 
-                except Exception as e:
-                    print("프로필 이미지 열기 실패:", e)
-
-        profile_path = self.controller.crop_img_circle(profile_path)
-        self.Img = ImageTk.PhotoImage(profile_path)
+        self.profile_path = self.controller.crop_img_circle(self.profile_path)
+        self.Img = ImageTk.PhotoImage(self.profile_path)
         self.writer_img = tk.Label(entry_frame, image=self.Img, bg=Color.DARK_GRAY)
         self.writer_img.pack(side="left", anchor="w", padx=(10,2), pady=10)
 
@@ -1515,22 +1509,19 @@ class PostFeed(tk.Frame):
         # 99999999999999999999
         msg = Message.create_get_userinfo_msg(self.controller.get_user_id())
         res = self.controller.request_db(msg)
-        pImg = res["data"]["profile_img"]
 
-        # 프로필 사진이 없다면 기본 이미지
-        profile_path = Image.open(img_path + 'profileImg.png').resize((40, 40))
+        self.profile_path = None
 
         # 서버에서 이미지가 제대로 왔다면 디코드 후 사용
-        if pImg not in (None, 'None', b'None', '', b'', b"b'None'"):
+        if res["data"] not in (None, 'None', b'None', '', b'', b"b'None'"):
+            pImg = res["data"]["profile_img"]
             bio = self.controller.decode_image(pImg)
-            if bio:
-                try:
-                    profile_path = Image.open(bio).resize((40, 40))
-                except Exception as e:
-                    print("프로필 이미지 열기 실패:", e)
+            self.profile_path = Image.open(bio).resize((40, 40))
+        else:
+            self.profile_path = Image.open(img_path + 'profileImg.png').resize((40, 40))
 
-        profile_path = self.controller.crop_img_circle(profile_path)
-        self.profileimg = ImageTk.PhotoImage(profile_path)
+        self.profile_path = self.controller.crop_img_circle(self.profile_path)
+        self.profileimg = ImageTk.PhotoImage(self.profile_path)
         imgLabel = tk.Label(leftFrame, image=self.profileimg, bg=Color.DARK_GRAY)
         imgLabel.pack(anchor="n", padx=10, pady=10)
 
@@ -2201,6 +2192,7 @@ class ActivityPage(tk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.activitypageImg = ImageTk.PhotoImage(Image.open(img_path + 'activitypage.png'))
+        self.config(bg="aqua")
 
         label = tk.Label(self, image=self.activitypageImg)
         label.pack()
