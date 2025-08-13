@@ -1,4 +1,3 @@
-# App.py
 import threading
 import time
 import tkinter as tk
@@ -11,13 +10,16 @@ from Msg import *
 import Config
 from copy import deepcopy
 import datetime
+from tkinter import filedialog
 import base64, io
 
 # 영문 폰트 SF Pro text, 한글폰트 Apple SD Gothic Neo
 # threadsFont = tk.font.Font(family="Apple SD Gothic Neo", size=12, weight="bold", overstrike=False)
 
 # 이미지 경로
-img_path = path.dirname(path.abspath(__file__)) + "\\images\\"
+#img_path = path.dirname(path.abspath(__file__)) + "\\images\\"
+img_path = path.dirname(path.abspath(__file__)) + "\\..\\images\\"
+
 
 filename = None
 
@@ -28,6 +30,7 @@ class EnumMenuBar:
     NEW = 2
     ACTIVITY = 3
     MY_PAGE = 4
+
 
 class App(tk.Tk):
     def __init__(self):
@@ -64,7 +67,7 @@ class App(tk.Tk):
         self.w_menu_my_img = ImageTk.PhotoImage(Image.open(img_path + 'home5-2.png'))
 
         # 임의로 넣은 아이디. 나중에 ""으로
-        self.__user_id = ""  # 유저 아이디
+        self.__user_id = "ht"  # 유저 아이디
 
         self.frames = {}
 
@@ -84,7 +87,7 @@ class App(tk.Tk):
         self.add_frame(PostDetailPage, self)
 
         # 첫 화면
-        self.show_frame(LoginPage)
+        self.show_frame(HomePage)
 
     def add_frame(self, Frame, parent=None):
         """
@@ -139,7 +142,7 @@ class App(tk.Tk):
     def on_Text_click(self, text, string):
         if string in text.get("1.0", tk.END):
             text.delete("1.0", tk.END)
-    
+
     def show(self):
         """
         테스트용
@@ -150,9 +153,7 @@ class App(tk.Tk):
         """
         이미지를 원형으로 자른다.
         """
-        image = self.reduce_image_size(image, 5)
-
-        mask_img = Image.new('L', image.size, color="black")
+        mask_img = Image.new('L', image.size, color=Color.DARK_GRAY)
 
         x = mask_img.width / 2
         y = mask_img.height / 2
@@ -176,7 +177,8 @@ class App(tk.Tk):
                 value = mask_pix[x, y]
                 if value == 0:
                     image_pix[x, y] = (0, 0, 0, 0)  # 투명 값 설정
-        image.save("dfdf.png")
+        image = self.reduce_image_size(image, 5)
+
         return image
 
     def request_db(self, msg):
@@ -197,7 +199,7 @@ class App(tk.Tk):
                     chunk = client_socket.recv(self.baudrate)
                     if not chunk:
                         break
-                    
+
                     recv_data += chunk
 
                     # 대용량 데이터에 대비하기 위해 파일 끝을 확인하여 수신 받도록 수정 함.
@@ -211,7 +213,7 @@ class App(tk.Tk):
         finally:
             client_socket.close()
 
-    def place_menu_bar(self, place_to, active_menu:int):
+    def place_menu_bar(self, place_to, active_menu: int):
         """
         홈 맨 아래 아이콘들을 배치한다.
         """
@@ -230,23 +232,28 @@ class App(tk.Tk):
         elif active_menu == EnumMenuBar.MY_PAGE:
             my_img = self.w_menu_my_img
 
-        home1Btn = tk.Button(place_to, image=home_img, bd=0, background=Color.DARK_GRAY, activebackground=Color.DARK_GRAY,
+        home1Btn = tk.Button(place_to, image=home_img, bd=0, background=Color.DARK_GRAY,
+                             activebackground=Color.DARK_GRAY,
                              relief="flat", highlightthickness=0, command=lambda: self.on_click_home_btn())
         home1Btn.place(x=5, y=860)
 
-        home2Btn = tk.Button(place_to, image=msg_img, bd=0, background=Color.DARK_GRAY, activebackground=Color.DARK_GRAY, relief="flat",
+        home2Btn = tk.Button(place_to, image=msg_img, bd=0, background=Color.DARK_GRAY,
+                             activebackground=Color.DARK_GRAY, relief="flat",
                              highlightthickness=0, command=lambda: self.on_click_msg_btn())
         home2Btn.place(x=95, y=860)
 
-        home3Btn = tk.Button(place_to, image=new_img, bd=0, background=Color.DARK_GRAY, activebackground=Color.DARK_GRAY, relief="flat",
+        home3Btn = tk.Button(place_to, image=new_img, bd=0, background=Color.DARK_GRAY,
+                             activebackground=Color.DARK_GRAY, relief="flat",
                              highlightthickness=0, command=lambda: self.on_click_new_btn())
         home3Btn.place(x=185, y=860)
 
-        home4Btn = tk.Button(place_to, image=act_img, bd=0, background=Color.DARK_GRAY, activebackground=Color.DARK_GRAY, relief="flat",
+        home4Btn = tk.Button(place_to, image=act_img, bd=0, background=Color.DARK_GRAY,
+                             activebackground=Color.DARK_GRAY, relief="flat",
                              highlightthickness=0, command=lambda: self.on_click_act_btn())
         home4Btn.place(x=275, y=860)
 
-        home5Btn = tk.Button(place_to, image=my_img, bd=0, background=Color.DARK_GRAY, activebackground=Color.DARK_GRAY, relief="flat",
+        home5Btn = tk.Button(place_to, image=my_img, bd=0, background=Color.DARK_GRAY, activebackground=Color.DARK_GRAY,
+                             relief="flat",
                              highlightthickness=0, command=lambda: self.on_click_my_btn())
         home5Btn.place(x=365, y=860)
 
@@ -270,10 +277,10 @@ class App(tk.Tk):
 
     def get_user_id(self):
         return self.__user_id
-    
+
     def reduce_image_size(self, image, target_size_kb):
         try:
-            quality = 70 
+            quality = 70
             n_image = image
             while True:
                 output_buffer = io.BytesIO()
@@ -298,7 +305,7 @@ class App(tk.Tk):
     def decode_image(self, image_bytes):
         """서버에서 받은 이미지 처리"""
 
-        #if not image_bytes or image_bytes == b'None':
+        # if not image_bytes or image_bytes == b'None':
         if image_bytes in (None, b'None', 'None', b'', '', b"b'None'"):
             return None
 
@@ -336,23 +343,23 @@ class App(tk.Tk):
         except Exception as e:
             print(f"[decode_image 오류] {e}")
             return None
-        
+
     def load_profile_img(self, id):
-        user_info = self.request_db(Message.create_get_userinfo_msg(id))
+        user_info = self.controller.request_db(Message.create_get_userinfo_msg(id))
 
         if not user_info:
             return None
 
         byte_image = user_info["data"]["profile_img"]
 
-        if user_info["status"] == EnumMsgStatus.SUCCESS and byte_image not in (None, 'None', b'None', '', b'', b"b'None'"):
-            image = self.decode_image(byte_image)
+        if user_info["status"] == EnumMsgStatus.SUCCESS and byte_image not in (None, 'None', b'None', '', b'',
+                                                                               b"b'None'"):
+            image = self.controller.decode_image(byte_image)
             profile_img = Image.open(image).resize((40, 40))
         else:
             profile_img = Image.open(img_path + "profileImg.png").resize((40, 40))
 
-        return self.crop_img_circle(profile_img)
-
+        return profile_img
 
 
 # 어플 실행 화면 - 시간 남으면..
@@ -360,15 +367,6 @@ class firstPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-
-        self.firstpage_img = ImageTk.PhotoImage(Image.open(img_path + "firstpage.png"))
-        firstpage_label = tk.Label(self, image=self.firstpage_img)
-        firstpage_label.pack(fill="both", expand=True)
-
-        self.after(2000, lambda: self.controller.show_frame(LoginPage))
-
-    def show_frame(self):
-        self.tkraise()
 
 
 # 로그인 화면 실행
@@ -442,7 +440,6 @@ class LoginPage(tk.Frame):
         self.checkBtn.image = self.checkImg
         self.checkBtn.place(x=280, y=130)
 
-
     def show_frame(self):
         self.tkraise()
 
@@ -474,6 +471,7 @@ class LoginPage(tk.Frame):
         """
         return Message.create_login_msg(id=id, password=password)
 
+
 # 회원가입 화면 실행
 class JoinPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -482,8 +480,8 @@ class JoinPage(tk.Frame):
         self.parent = parent
 
         self.nameImg = ImageTk.PhotoImage(Image.open(img_path + 'id.png'))
-        self.emailImg = ImageTk.PhotoImage(Image.open(img_path +'id.png'))
-        self.numImg = ImageTk.PhotoImage(Image.open(img_path +'id.png'))
+        self.emailImg = ImageTk.PhotoImage(Image.open(img_path + 'id.png'))
+        self.numImg = ImageTk.PhotoImage(Image.open(img_path + 'id.png'))
         self.jidImg = ImageTk.PhotoImage(Image.open(img_path + 'id.png'))
         self.jpwImg = ImageTk.PhotoImage(Image.open(img_path + 'id.png'))
         self.jloginImg = ImageTk.PhotoImage(Image.open(img_path + 'joinBtn.png'))
@@ -509,7 +507,8 @@ class JoinPage(tk.Frame):
         self.nameEntry = tk.Entry(self, bd=0, fg="gray")
         self.nameEntry.place(x=60, y=370)
         self.nameEntry.insert(0, self.default_name_text)
-        self.nameEntry.bind('<Button-1>', lambda e: self.controller.on_entry_click(self.nameEntry, self.default_name_text))
+        self.nameEntry.bind('<Button-1>',
+                            lambda e: self.controller.on_entry_click(self.nameEntry, self.default_name_text))
         self.nameEntry.bind('<FocusOut>', lambda e: self.controller.on_focusout(self.nameEntry, self.default_name_text))
 
         # 회원가입 아이디 입력
@@ -528,9 +527,10 @@ class JoinPage(tk.Frame):
         self.emailEntry = tk.Entry(self, bd=0, fg="gray")
         self.emailEntry.place(x=60, y=530)
         self.emailEntry.insert(0, self.default_email_text)
-        self.emailEntry.bind('<Button-1>', lambda e: self.controller.on_entry_click(self.emailEntry, self.default_email_text))
-        self.emailEntry.bind('<FocusOut>', lambda e: self.controller.on_focusout(self.emailEntry, self.default_email_text))
-
+        self.emailEntry.bind('<Button-1>',
+                             lambda e: self.controller.on_entry_click(self.emailEntry, self.default_email_text))
+        self.emailEntry.bind('<FocusOut>',
+                             lambda e: self.controller.on_focusout(self.emailEntry, self.default_email_text))
 
         # 회원가입 비밀번호 입력
         self.jpwLabel = tk.Label(self, image=self.jpwImg)
@@ -542,7 +542,8 @@ class JoinPage(tk.Frame):
         self.jpwEntry.bind('<FocusOut>', lambda e: self.controller.on_focusout(self.jpwEntry, self.default_pw_text))
 
         # 회원가입 파란색 버튼
-        self.jloginBtn = tk.Button(self, image=self.jloginImg, bd=0, activebackground="white", command=self.process_join)
+        self.jloginBtn = tk.Button(self, image=self.jloginImg, bd=0, activebackground="white",
+                                   command=self.process_join)
         self.jloginBtn.place(x=68, y=850)
 
         # 회원가입 완료 창
@@ -556,13 +557,14 @@ class JoinPage(tk.Frame):
         self.completeframe.pack()
 
         self.checkImg = ImageTk.PhotoImage(Image.open(img_path + "check.png"))
-        self.checkBtn = tk.Button(self.complete_frame, image=self.checkImg, bd=0, command=lambda:self.confirm_register_message())
+        self.checkBtn = tk.Button(self.complete_frame, image=self.checkImg, bd=0,
+                                  command=lambda: self.confirm_register_message())
         self.checkBtn.image = self.checkImg
         self.checkBtn.place(x=300, y=15)
 
-        #뒤로 가기 버튼
+        # 뒤로 가기 버튼
         self.backImg = ImageTk.PhotoImage(Image.open(img_path + "back.png"))
-        self.backBtn = tk.Button(self, image=self.backImg, bd=0, command=lambda:controller.show_frame(LoginPage))
+        self.backBtn = tk.Button(self, image=self.backImg, bd=0, command=lambda: controller.show_frame(LoginPage))
         self.backBtn.place(x=30, y=40)
 
     def confirm_register_message(self):
@@ -578,8 +580,7 @@ class JoinPage(tk.Frame):
         self.complete_frame.place_forget()
         self.controller.show_frame(LoginPage)
 
-
-    #회원 가입
+    # 회원 가입
     def process_join(self):
         """
         서버에 회원 가입을 요청한다.
@@ -609,6 +610,7 @@ class JoinPage(tk.Frame):
 
     def show_frame(self):
         self.tkraise()
+
 
 # 스크롤 구현 완료된 for you 페이지
 class HomePage(tk.Frame):
@@ -691,7 +693,7 @@ class HomePage(tk.Frame):
         self.tkraise()
         # t = threading.Thread(target=self.load_feed, daemon=True)
         # t.start()
-        #self.load_feed()
+        # self.load_feed()
 
     def thread_load_feed(self):
         t = threading.Thread(target=self.load_feed, daemon=True)
@@ -717,7 +719,8 @@ class HomePage(tk.Frame):
             profile_img_path = None
             pImg = user_info["data"]["profile_img"]
 
-            if user_info["status"] == EnumMsgStatus.SUCCESS and pImg not in (None, 'None', b'None', '', b'', b"b'None'"):
+            if user_info["status"] == EnumMsgStatus.SUCCESS and pImg not in (None, 'None', b'None', '', b'',
+                                                                             b"b'None'"):
                 bio = self.controller.decode_image(pImg)
                 profile_img_path = Image.open(bio).resize((40, 40))
             else:
@@ -757,7 +760,6 @@ class MyPage(tk.Frame):
 
         self.image_base64 = None
 
-
         # 상단 프로필 프레임
         self.FrameTop = tk.Frame(self, bg=Color.DARK_GRAY, height=240)
         self.FrameTop.pack(side="top", fill="x")
@@ -769,15 +771,15 @@ class MyPage(tk.Frame):
         self.id_label.place(x=30, y=160)
 
         self.follows_cnt_label = tk.Label(self.FrameTop, fg="gray", bg=Color.DARK_GRAY,
-                                     font=("Arial", 11))
+                                          font=("Arial", 11))
         self.follows_cnt_label.place(x=30, y=190)
 
         # 프로필 사진
         self.profile_label = tk.Label(self.FrameTop, fg="white", bg=Color.DARK_GRAY)
         self.profile_label.place(x=360, y=55)  # 데이터 값 가져오기
 
-        #프로필 수정 버튼
-        self.edit_pfImg = ImageTk.PhotoImage(Image.open(img_path +'edit_pf.png').resize((130, 30)))
+        # 프로필 수정 버튼
+        self.edit_pfImg = ImageTk.PhotoImage(Image.open(img_path + 'edit_pf.png').resize((130, 30)))
         self.edit_pfBtn = tk.Button(self, image=self.edit_pfImg, bd=0, relief="flat", highlightthickness=0,
                                     activebackground=Color.DARK_GRAY, command=self.show_edit_popup)
         self.edit_pfBtn.place(x=310, y=200)
@@ -792,35 +794,40 @@ class MyPage(tk.Frame):
         self.frame.image = self.edit_profileImg
         self.frame.pack()
 
-        # crop_profile = Image.open(img_path + 'addprofile.png')
-        # crop_profile = self.controller.crop_img_circle(crop_profile)
-        self.addprofileImg = ImageTk.PhotoImage(Image.open(img_path + 'addprofile2.png'))
-        # lllllllllllllllllllllllll
+        self.namenptImg = ImageTk.PhotoImage(Image.open(img_path + 'namenpt.png'))
+        self.namenptLabel = tk.Label(self.editframe, image=self.namenptImg, bg=Color.DARK_GRAY)
+        self.namenptLabel.image = self.namenptImg
+        self.namenptLabel.place(x=27, y=150)
+
+        self.addprofileImg = ImageTk.PhotoImage(Image.open(img_path + 'addprofile.png'))
         self.addprofileButton = tk.Button(self.editframe, image=self.addprofileImg, bd=0, bg=Color.DARK_GRAY,
                                           activebackground=Color.DARK_GRAY,
                                           command=self.select_profile_image)
         self.addprofileButton.image = self.addprofileImg
-        self.addprofileButton.place(x=315, y=110)
+        self.addprofileButton.place(x=305, y=160)
 
         # 수정 취소 버튼
         self.cancelImg = ImageTk.PhotoImage(Image.open(img_path + 'cancel2.png'))
-        self.cancelBtn = tk.Button(self.editframe, image=self.cancelImg, bd=0,bg='gray', activebackground=Color.DARK_GRAY, highlightthickness=0,
+        self.cancelBtn = tk.Button(self.editframe, image=self.cancelImg, bd=0, bg=Color.DARK_GRAY,
+                                   activebackground=Color.DARK_GRAY,
                                    command=self.hide_edit_popup)
         self.cancelBtn.place(x=10, y=5)
 
-        #이름 수정 entry
-        self.newnameEntry = tk.Entry(self.editframe, width=18, fg="white", bg='#181818', font=("고딕", 15, 'bold'), bd=0, highlightthickness=0)
-        self.newnameEntry.place(x=40, y=170)
+        # 이름 수정 entry
+        self.newnameEntry = tk.Entry(self.editframe, width=18, fg="white", bg=Color.DARK_GRAY, font=("고딕", 15, 'bold'),
+                                     bd=0, highlightthickness=0)
+        self.newnameEntry.place(x=43, y=181)
 
         # 수정 완료 버튼
         self.doneImg = ImageTk.PhotoImage(Image.open(img_path + 'done2.png'))
-        self.doneBtn = tk.Button(self.editframe, image=self.doneImg, bd=0, bg=Color.DARK_GRAY, activebackground=Color.DARK_GRAY, highlightthickness=0,
-                                 command= self.save_edit_data)
+        self.doneBtn = tk.Button(self.editframe, image=self.doneImg, bd=0, bg=Color.DARK_GRAY,
+                                 activebackground=Color.DARK_GRAY,
+                                 command=self.save_edit_data)
         self.doneBtn.image = self.doneImg
         self.doneBtn.place(x=320, y=5)
 
         # 탭 프레임(버튼 배치)
-        self.FrameTabs = tk.Frame(self, bg=Color.DARK_GRAY, height=50)
+        self.FrameTabs = tk.Frame(self, bg="red", height=50)
         self.FrameTabs.pack(side="top", fill="x")
 
         self.mp1Img = ImageTk.PhotoImage(Image.open(img_path + 'mp1.png'))
@@ -843,11 +850,11 @@ class MyPage(tk.Frame):
                                 activebackground=Color.DARK_GRAY, command=lambda: self.switch_tabs("Reposts"))
         self.mp4Btn.place(x=340, y=0)
 
-        self.lineFrame = tk.Frame(self.FrameTabs, bg="#666768")
-        self.lineFrame.pack(fill="x", pady=(50, 0))
+        # self.lineFrame = tk.Frame(self.FrameTabs, bg="#666768")
+        # self.lineFrame.pack(fill="x", pady=(50,0))
 
         # 탭 별 프레임 생성
-        self.FrameContent = tk.Frame(self, bg=Color.DARK_GRAY, height=450)
+        self.FrameContent = tk.Frame(self, bg=Color.DARK_GRAY, height=550)
         self.FrameContent.pack(side="top", fill="x")
 
         # 게시글 없을 시 프레임에 나타나는 메시지
@@ -994,75 +1001,6 @@ class MyPage(tk.Frame):
                 border.pack(fill="x", pady=10)
 
 
-                imgLabel = tk.Label(leftFrame,image= self.profile_img, bg=Color.DARK_GRAY)
-                imgLabel.pack(anchor="n")
-                imgLabel.image = self.profile_img
-
-                contentArea = tk.Frame(rightFrame, bg=Color.DARK_GRAY)
-                contentArea.pack(fill="x", anchor="w")
-
-                topInfo = tk.Frame(contentArea, bg=Color.DARK_GRAY)
-                topInfo.pack(anchor="w", pady=(0, 2))
-
-                idLabel = tk.Label(topInfo, text=feed_data["id"], fg="white", bg=Color.DARK_GRAY, font=("Arial", 11))
-                idLabel.pack(side="left")
-
-                # 시간 계산
-                str_time = str(feed_data["writed_time"])
-                post_time = datetime.datetime.strptime(str_time, "%Y-%m-%d %H:%M:%S")
-                now = datetime.datetime.now()
-                diff = now - post_time
-                if diff.days >= 1:
-                   postTime = f"{diff.days} day ago"
-                elif diff.seconds >= 3600:
-                   postTime = f"{diff.seconds // 3600}h"
-                elif diff.seconds >= 60:
-                   postTime = f"{diff.seconds // 60}m"
-                else:
-                   postTime = f"{diff.seconds}s"
-
-                timeLabel = tk.Label(topInfo, text=postTime, fg="gray", bg=Color.DARK_GRAY, font=("Arial", 9))
-                timeLabel.pack(side="left", padx=(8, 0))
-
-                # 게시글 내용
-                feedLabel = tk.Label(contentArea, text=feed_data["content"], fg="white", bg=Color.DARK_GRAY,
-                                    wraplength=400, justify="left", font=("맑은고딕", 11))
-                feedLabel.pack(anchor="w", pady=(0, 10))
-
-                # 게시글 이미지(decode_image 함수 사용 버전)
-                pil_img = self.controller.decode_image(feed_data["image"])
-
-                if pil_img is not None:
-                    image = Image.open(pil_img).resize((300, 300))
-                    self.img = ImageTk.PhotoImage(image)
-                    imgLabel = tk.Label(contentArea, image=self.img, bg=Color.DARK_GRAY)
-                    imgLabel.pack(anchor="w", pady=(0, 10))
-
-                # 버튼 영역(좋아요, 댓글, 리포스트, 공유 버튼)
-                btnFrame = tk.Frame(rightFrame, bg=Color.DARK_GRAY)
-                btnFrame.pack(anchor="w", pady=(0, 5))
-
-                self.likeBtn = tk.Button(btnFrame, image=self.like_images[self.like_state], bd=0,
-                                        background=Color.DARK_GRAY,
-                                        activebackground=Color.DARK_GRAY, command=self.toggle_like)
-                self.likeBtn.pack(side="left")
-
-                self.likeCnt = tk.Label(btnFrame, text=feed_data["like_cnt"], fg="white", bg=Color.DARK_GRAY)
-                self.likeCnt.pack(side="left", padx=(2, 20))
-
-                commentBtn = tk.Button(btnFrame, image=self.commentimg, bd=0, background=Color.DARK_GRAY,
-                                      activebackground=Color.DARK_GRAY)
-                commentBtn.pack(side="left")
-                commentCnt = tk.Label(btnFrame, text=feed_data["comment_cnt"], fg="white", bg=Color.DARK_GRAY)
-                commentCnt.pack(side="left", padx=(2, 15))
-
-                repostBtn = tk.Button(btnFrame, image=self.repostimg, bd=0, background=Color.DARK_GRAY,
-                                     activebackground=Color.DARK_GRAY)
-                repostBtn.pack(side="left", padx=(0, 20))
-
-                msgBtn = tk.Button(btnFrame, image=self.msgimg, bd=0, background=Color.DARK_GRAY,
-                                  activebackground=Color.DARK_GRAY)
-                msgBtn.pack(side="left")
     # 탭 전환 시 버튼 이미지 전환
     def switch_tabs(self, tab_name):
         self.show_sub_frame(tab_name)
@@ -1087,7 +1025,6 @@ class MyPage(tk.Frame):
         self.hide_edit_popup()
 
     def update_user_info(self):
-        #이름
         msg = Message.create_get_userinfo_msg(self.controller.get_user_id())
         res = self.controller.request_db(msg)
 
@@ -1097,25 +1034,25 @@ class MyPage(tk.Frame):
         self.id_text = res['data']['id']
         self.id_label.config(text=self.id_text)
 
-        #팔로워 수 데이터 요청
+        # 팔로워 수 데이터 요청
         msg2 = Message.create_get_follows_msg(self.controller.get_user_id())
         res2 = self.controller.request_db(msg2)
         self.follows_cnt_label.config(text=str(len(res2['data'])) + ' followers')
 
-        #변경된 프로필 이미지 프레임
+        # 변경된 프로필 이미지 프레임
         profile_img_data = res['data'].get('profile_img')
 
-        #이미지가 저장되어 있다면?
+        # 이미지가 저장되어 있다면?
         if profile_img_data and profile_img_data != b'None':
             img_io = self.controller.decode_image(profile_img_data)
             pil_img = self.controller.crop_img_circle(Image.open(img_io).resize((70, 70)))
-        else: #이미지가 없을 경우 기본 이미지!
+        else:  # 이미지가 없을 경우 기본 이미지!
             pil_img = Image.open(img_path + 'profileImg.png').resize((70, 70))
 
         self.profile_img = ImageTk.PhotoImage(pil_img)
         self.profile_label.config(image=self.profile_img)
 
-    #새로운 이미지 파일 선택
+    # 새로운 이미지 파일 선택
     def select_profile_image(self):
         file_path = filedialog.askopenfilename(
             title="파일 선택",
@@ -1127,7 +1064,7 @@ class MyPage(tk.Frame):
         try:
             self.img = Image.open(file_path).resize((70, 70))
             self.img = self.controller.crop_img_circle(self.img)
-            
+
             self.selected_photo = ImageTk.PhotoImage(self.img)
             self.profile_label.config(image=self.selected_photo)
 
@@ -1139,7 +1076,6 @@ class MyPage(tk.Frame):
         except Exception as e:
             print(f"이미지 열기 오류: {e}")
 
-
     def save_edit_data(self):
         new_name = self.newnameEntry.get().strip()
         self.doneBtn.config(state="disabled")
@@ -1150,9 +1086,9 @@ class MyPage(tk.Frame):
             img_data = b'None'
 
         msg = Message.create_update_profile(
-                    user_id=self.controller.get_user_id(),
-                    user_name=new_name,
-                    profile_image=img_data
+            user_id=self.controller.get_user_id(),
+            user_name=new_name,
+            profile_image=img_data
         )
 
         t = threading.Thread(target=self.profile_worker, args=(msg,), daemon=True)
@@ -1177,19 +1113,6 @@ class MyPage(tk.Frame):
 
     def hide_edit_popup(self):
         self.editframe.place_forget()
-
-    def toggle_like(self):
-        # 좋아요 상태 토글
-        self.like_state = 1 - self.like_state
-        self.likeBtn.config(image=self.like_images[self.like_state])
-
-        # 좋아요 수 변경
-        current_likes = int(self.likeCnt.cget("text"))
-        if self.like_state == 1:
-            current_likes += 1
-        else:
-            current_likes -= 1
-        self.likeCnt.config(text=str(current_likes))
 
 
 # 스레드 페이지
@@ -1227,28 +1150,28 @@ class PostDetailPage(tk.Frame):
         top_frame = tk.Frame(self.body, bg="black")
         top_frame.pack(side="top", fill="x")
 
-        self.profile_lbl = tk.Label(top_frame,image="", fg="white", bg="black", font=("Arial", 14))
+        self.profile_lbl = tk.Label(top_frame, image="", fg="white", bg="black", font=("Arial", 14))
         self.profile_lbl.pack(side="left", anchor="w", padx=(15, 5), pady=(6, 2))
 
         self.id_lbl = tk.Label(top_frame, text="", fg="white", bg="black", font=("Arial", 14))
-        self.id_lbl.pack(side="left", anchor="w", padx=(5, 10), pady=(6,2))
+        self.id_lbl.pack(side="left", anchor="w", padx=(5, 10), pady=(6, 2))
 
         self.time_lbl = tk.Label(top_frame, text="시간 들어갈 자리", fg="gray", bg="black", font=("Arial", 10))
-        self.time_lbl.pack(side="left", anchor="w", pady=(6,2))
+        self.time_lbl.pack(side="left", anchor="w", pady=(6, 2))
 
         self.content_lbl = tk.Label(self.body, text="", fg="white", bg=Color.DARK_GRAY,
                                     wraplength=430, justify="left", font=("맑은고딕", 12))
-        self.content_lbl.pack(anchor="w", padx=12, pady=(15,10))
+        self.content_lbl.pack(anchor="w", padx=12, pady=(15, 10))
 
         self.image_lbl = tk.Label(self.body, bg=Color.DARK_GRAY)
-        self.image_lbl.pack(anchor="w", padx=12, pady=(0,10))
+        self.image_lbl.pack(anchor="w", padx=12, pady=(0, 10))
 
         sep = tk.Frame(self.body, bg="#323232", height=1)
         sep.pack(fill="x", padx=8, pady=10)
 
         # 댓글 목록 영역
         self.comments_container = tk.Frame(self.body, bg="black")
-        self.comments_container.pack(fill="x", padx=8, pady=(0,10))
+        self.comments_container.pack(fill="x", padx=8, pady=(0, 10))
 
         # 댓글 입력
         entry_frame = tk.Frame(self, bg="black")
@@ -1256,29 +1179,34 @@ class PostDetailPage(tk.Frame):
 
         msg = Message.create_get_userinfo_msg(self.controller.get_user_id())
         res = self.controller.request_db(msg)
-        self.profile_path = None
+        pImg = res["data"]["profile_img"]
 
-        # 서버에서 이미지가 제대로 왔다면 디코드 후 사용
-        if res["data"] not in (None, 'None', b'None', '', b'', b"b'None'"):
-            pImg = res["data"]["profile_img"]
+        # 프로필 사진이 없다면 기본 이미지
+        profile_path = Image.open(img_path + 'profileImg.png').resize((40, 40))
+
+        # 서버에서 프로필 이미지가 제대로 왔다면 디코드 후 사용
+        if pImg not in (None, 'None', b'None', '', b'', b"b'None'"):
             bio = self.controller.decode_image(pImg)
-            self.profile_path = Image.open(bio).resize((40, 40))
-        else:
-            self.profile_path = Image.open(img_path + 'profileImg.png').resize((40, 40))
+            if bio:
+                try:
+                    profile_path = Image.open(bio).resize((40, 40))
 
-        self.profile_path = self.controller.crop_img_circle(self.profile_path)
-        self.Img = ImageTk.PhotoImage(self.profile_path)
-        self.writer_img = tk.Label(entry_frame, image=self.Img, bg=Color.DARK_GRAY)
-        self.writer_img.pack(side="left", anchor="w", padx=(10,2), pady=10)
+                except Exception as e:
+                    print("프로필 이미지 열기 실패:", e)
 
-        self.comment_entry = tk.Entry(entry_frame, bg="#222", fg="white", insertbackground=Color.DARK_GRAY, relief="flat")
+        profile_path = self.controller.crop_img_circle(profile_path)
+        self.Img = ImageTk.PhotoImage(profile_path)
+        self.writer_img = tk.Label(entry_frame, image=self.Img, bg="black")
+        self.writer_img.pack(side="left", anchor="w", padx=(10, 2), pady=10)
+
+        self.comment_entry = tk.Entry(entry_frame, bg="#222", fg="white", insertbackground=Color.DARK_GRAY,
+                                      relief="flat")
         self.comment_entry.pack(side="left", anchor="w", fill="x", expand=True, padx=8, pady=8, ipady=10)
 
         sendBtn = tk.Button(entry_frame, text="Send", bg="#1e1e1e", fg="white", relief="flat", bd=0, padx=12, pady=6,
                             activebackground="#2a2a2a", activeforeground="white", cursor="hand2",
                             command=self.send_comment)
         sendBtn.pack(side="right", padx=8, pady=8)
-
 
     def set_post(self, post_id, feed_data):
         """ Home에서 호출: 상세 표시 데이터 주입 """
@@ -1408,7 +1336,7 @@ class PostDetailPage(tk.Frame):
             postTime = f"{diff.seconds}s"
 
         text_box = tk.Frame(rightFrame, bg=Color.DARK_GRAY)
-        text_box.pack(fill="x",  anchor="w")
+        text_box.pack(fill="x", anchor="w")
 
         topInfo = tk.Frame(text_box, bg=Color.DARK_GRAY)
         topInfo.pack(fill="x", anchor="w")
@@ -1419,9 +1347,9 @@ class PostDetailPage(tk.Frame):
         time_lbl = tk.Label(topInfo, text=postTime, fg="gray", bg=Color.DARK_GRAY, font=("Arial", 9))
         time_lbl.pack(side="left", padx=(8, 0))
 
-        content_lbl = tk.Label(text_box, text=c["content"], fg="white", bg=Color.DARK_GRAY, wraplength=380, justify="left")
+        content_lbl = tk.Label(text_box, text=c["content"], fg="white", bg=Color.DARK_GRAY, wraplength=380,
+                               justify="left")
         content_lbl.pack(anchor="w")
-
 
     def send_comment(self):
         text = self.comment_entry.get().strip()
@@ -1433,7 +1361,7 @@ class PostDetailPage(tk.Frame):
             id=self.controller.get_user_id(),
             content=text,
             post_time=datetime.datetime.now(),
-            parent_id=self.post_id,     # patent_id 가 있으면 댓글로 구분
+            parent_id=self.post_id,  # patent_id 가 있으면 댓글로 구분
             image=b'None'
         )
 
@@ -1454,6 +1382,7 @@ class PostDetailPage(tk.Frame):
     def show_frame(self):
         self.tkraise()
 
+
 # following 피드 화면
 class Following_FeedPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -1467,13 +1396,15 @@ class Following_FeedPage(tk.Frame):
 
         # 홈 맨 왼쪽 위 back 버튼
         self.homeLeftImg = ImageTk.PhotoImage(Image.open(img_path + 'backBtn.png').resize((70, 25)))
-        homeLeftBtn = tk.Button(topFrame, image=self.homeLeftImg, bd=0, background=Color.DARK_GRAY, activebackground=Color.DARK_GRAY,
+        homeLeftBtn = tk.Button(topFrame, image=self.homeLeftImg, bd=0, background=Color.DARK_GRAY,
+                                activebackground=Color.DARK_GRAY,
                                 command=lambda: controller.show_frame(HomePage))
         homeLeftBtn.pack(side="left", padx=10, pady=30)
 
         # 홈 맨 위 가운데 following
         self.homeLogoImg = ImageTk.PhotoImage(Image.open(img_path + 'followingBtn.png').resize((140, 35)))
-        followingBtn = tk.Button(topFrame, image=self.homeLogoImg, bd=0, background=Color.DARK_GRAY, activebackground=Color.DARK_GRAY,
+        followingBtn = tk.Button(topFrame, image=self.homeLogoImg, bd=0, background=Color.DARK_GRAY,
+                                 activebackground=Color.DARK_GRAY,
                                  command=self.controller.show)
         followingBtn.place(x=167, y=23)
 
@@ -1514,22 +1445,23 @@ class Following_FeedPage(tk.Frame):
             profile_img_path = None
             pImg = user_info["data"]["profile_img"]
 
-            if user_info["status"] == EnumMsgStatus.SUCCESS and pImg not in (None, 'None', b'None', '', b'', b"b'None'"):
+            if user_info["status"] == EnumMsgStatus.SUCCESS and pImg not in (None, 'None', b'None', '', b'',
+                                                                             b"b'None'"):
                 bio = self.controller.decode_image(pImg)
                 profile_img_path = Image.open(bio).resize((40, 40))
             else:
                 profile_img_path = Image.open(img_path + "profileImg.png").resize((40, 40))
 
             feedItem = FeedItemFrame(
-                parent = self.contentFrame,
-                controller = self.controller,
-                profile_img_path = profile_img_path,
+                parent=self.contentFrame,
+                controller=self.controller,
+                profile_img_path=profile_img_path,
                 feed_data=feed_data,
                 like_images=self.like_images,
                 comment_img=self.commentimg,
                 repost_img=self.repostimg,
                 msg_img=self.msgimg,
-                post_id = post_id,
+                post_id=post_id,
             )
             feedItem.pack(fill="x", pady=(0, 5))
 
@@ -1537,9 +1469,11 @@ class Following_FeedPage(tk.Frame):
             border = tk.Frame(self.contentFrame, bg="#323232", height=1)
             border.pack(fill="x", pady=10)
 
+
 # 각 게시글
 class FeedItemFrame(tk.Frame):
-    def __init__(self, parent, post_id, controller, profile_img_path, feed_data, like_images, comment_img, repost_img, msg_img):
+    def __init__(self, parent, post_id, controller, profile_img_path, feed_data, like_images, comment_img, repost_img,
+                 msg_img):
         super().__init__(parent, bg=Color.DARK_GRAY)
         self.controller = parent
         self.controller = controller
@@ -1563,7 +1497,7 @@ class FeedItemFrame(tk.Frame):
 
         imgLabel = tk.Label(leftFrame, image=self.profile_img, bg=Color.DARK_GRAY)
         # 프로필 이미지 띄우는 중 그러나 안됨 왜지? --- 이제 됨!!
-        #imgLabel.image = profile_img
+        # imgLabel.image = profile_img
         imgLabel.pack(anchor="n")
 
         # 55555555555
@@ -1680,7 +1614,6 @@ class FeedItemFrame(tk.Frame):
         print("hi")
 
 
-
 # Feeds 사이드바
 class SidebarPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -1698,18 +1631,22 @@ class SidebarPage(tk.Frame):
         label1 = tk.Label(sideFrame, text="Feeds", fg="white", bg=Color.DARK_GRAY, font=("Arial", 23, "bold"))
         label1.place(x="20", y="30")
 
-        foryouBtn = tk.Button(sideFrame, image=self.feeds1img, bd=0, bg=Color.DARK_GRAY, activebackground=Color.DARK_GRAY,
+        foryouBtn = tk.Button(sideFrame, image=self.feeds1img, bd=0, bg=Color.DARK_GRAY,
+                              activebackground=Color.DARK_GRAY,
                               command=lambda: controller.show_frame(HomePage))
         foryouBtn.place(x="20", y="105")
 
-        followingBtn = tk.Button(sideFrame, image=self.feeds2img, bd=0, bg=Color.DARK_GRAY, activebackground=Color.DARK_GRAY,
+        followingBtn = tk.Button(sideFrame, image=self.feeds2img, bd=0, bg=Color.DARK_GRAY,
+                                 activebackground=Color.DARK_GRAY,
                                  command=lambda: controller.show_frame(Following_FeedPage))
         followingBtn.place(x="20", y="180")
 
     def show_frame(self):
-        self.tkraise()  
+        self.tkraise()
 
-# 게시물 작성 페이지
+    # 게시물 작성 페이지
+
+
 class PostFeed(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -1722,8 +1659,9 @@ class PostFeed(tk.Frame):
         topFrame.pack(side="top", fill="x")
 
         self.cancelImg = ImageTk.PhotoImage(Image.open(img_path + 'cancel.png').resize((60, 20)))
-        cancelBtnl = tk.Button(topFrame, image=self.cancelImg, bd=0, bg=Color.DARK_GRAY, activebackground=Color.DARK_GRAY, command=lambda: self.controller.show_frame(HomePage))
-        cancelBtnl.pack(anchor="w", padx=20, pady=(30,10))
+        cancelBtnl = tk.Button(topFrame, image=self.cancelImg, bd=0, bg=Color.DARK_GRAY,
+                               activebackground=Color.DARK_GRAY, command=lambda: self.controller.show_frame(HomePage))
+        cancelBtnl.pack(anchor="w", padx=20, pady=(30, 10))
 
         self.newPostImg = ImageTk.PhotoImage(Image.open(img_path + 'newPost.png').resize((125, 30)))
         newPostLabel = tk.Label(topFrame, image=self.newPostImg, bd=0, bg=Color.DARK_GRAY)
@@ -1747,19 +1685,22 @@ class PostFeed(tk.Frame):
         # 99999999999999999999
         msg = Message.create_get_userinfo_msg(self.controller.get_user_id())
         res = self.controller.request_db(msg)
+        pImg = res["data"]["profile_img"]
 
-        self.profile_path = None
+        # 프로필 사진이 없다면 기본 이미지
+        profile_path = Image.open(img_path + 'profileImg.png').resize((40, 40))
 
         # 서버에서 이미지가 제대로 왔다면 디코드 후 사용
-        if res["data"] not in (None, 'None', b'None', '', b'', b"b'None'"):
-            pImg = res["data"]["profile_img"]
+        if pImg not in (None, 'None', b'None', '', b'', b"b'None'"):
             bio = self.controller.decode_image(pImg)
-            self.profile_path = Image.open(bio).resize((40, 40))
-        else:
-            self.profile_path = Image.open(img_path + 'profileImg.png').resize((40, 40))
+            if bio:
+                try:
+                    profile_path = Image.open(bio).resize((40, 40))
+                except Exception as e:
+                    print("프로필 이미지 열기 실패:", e)
 
-        self.profile_path = self.controller.crop_img_circle(self.profile_path)
-        self.profileimg = ImageTk.PhotoImage(self.profile_path)
+        profile_path = self.controller.crop_img_circle(profile_path)
+        self.profileimg = ImageTk.PhotoImage(profile_path)
         imgLabel = tk.Label(leftFrame, image=self.profileimg, bg=Color.DARK_GRAY)
         imgLabel.pack(anchor="n", padx=10, pady=10)
 
@@ -1774,7 +1715,8 @@ class PostFeed(tk.Frame):
         self.idLabel.pack(side="left")
 
         # 게시글 작성
-        self.textEntry = tk.Text(contentArea,bd=0, height="5", bg=Color.DARK_GRAY, fg="gray", font=("Arial", 16), insertbackground="gray")
+        self.textEntry = tk.Text(contentArea, bd=0, height="5", bg=Color.DARK_GRAY, fg="gray", font=("Arial", 16),
+                                 insertbackground="gray")
         self.textEntry.pack(side="left")
         self.textEntry.insert(1.0, "What's new?")
         self.click_count = 0
@@ -1789,15 +1731,16 @@ class PostFeed(tk.Frame):
         btnFrame.pack(anchor="w")
 
         self.photoImg = ImageTk.PhotoImage(Image.open(img_path + 'photo.png').resize((40, 40)))
-        photoBtn = tk.Button(btnFrame, image=self.photoImg, bd=0, bg=Color.DARK_GRAY, activebackground=Color.DARK_GRAY, command=self.open_Img_File)
+        photoBtn = tk.Button(btnFrame, image=self.photoImg, bd=0, bg=Color.DARK_GRAY, activebackground=Color.DARK_GRAY,
+                             command=self.open_Img_File)
         photoBtn.pack(side="left")
 
         self.postImg = ImageTk.PhotoImage(Image.open(img_path + 'post.png').resize((65, 40)))
-        self.postBtn = tk.Button(btnFrame, image=self.postImg, bd=0, background=Color.DARK_GRAY, activebackground=Color.DARK_GRAY, command=self.update_post_info)
-        self.postBtn.pack(padx=(200,0))
+        self.postBtn = tk.Button(btnFrame, image=self.postImg, bd=0, background=Color.DARK_GRAY,
+                                 activebackground=Color.DARK_GRAY, command=self.update_post_info)
+        self.postBtn.pack(padx=(200, 0))
 
         controller.place_menu_bar(self, EnumMenuBar.HOME)
-
 
     def open_Img_File(self):
         file_path = filedialog.askopenfilename(
@@ -1878,16 +1821,21 @@ class MessagesPage(tk.Frame):
         self.configure(bg=Color.DARK_GRAY)
 
         # Messages 문구
-        messages_text_btn = tk.Button(self, image=self.messages_text_img, bd=0, background=Color.DARK_GRAY, activebackground=Color.DARK_GRAY, highlightthickness=0, command=self.controller.show)
+        messages_text_btn = tk.Button(self, image=self.messages_text_img, bd=0, background=Color.DARK_GRAY,
+                                      activebackground=Color.DARK_GRAY, highlightthickness=0,
+                                      command=self.controller.show)
         messages_text_btn.place(x=20, y=30)
 
         # 채팅 방 추가
-        add_chat_room_btn = tk.Button(self, image=self.add_chat_room_img, bd=0, background=Color.DARK_GRAY, activebackground=Color.DARK_GRAY, relief="flat", highlightthickness=0, command=lambda: self.controller.show_frame(MsgFriendsPage))
+        add_chat_room_btn = tk.Button(self, image=self.add_chat_room_img, bd=0, background=Color.DARK_GRAY,
+                                      activebackground=Color.DARK_GRAY, relief="flat", highlightthickness=0,
+                                      command=lambda: self.controller.show_frame(MsgFriendsPage))
         add_chat_room_btn.place(x=420, y=30)
 
         # 메시지 리스트
         self.list_frame = tk.Frame(self)
-        self.list_frame.place(x=0, y=100, width=self.controller.app_width, height=self.controller.contents_frame_height - 120)
+        self.list_frame.place(x=0, y=100, width=self.controller.app_width,
+                              height=self.controller.contents_frame_height - 120)
 
         self.canvas = tk.Canvas(self.list_frame, bg=Color.DARK_GRAY, highlightthickness=0)
 
@@ -1896,7 +1844,8 @@ class MessagesPage(tk.Frame):
         self.canvas.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
 
         # 캔버스에 스크롤 가능한 프레임 넣기
-        self.scrollable_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw", width=self.controller.app_width, height=740)
+        self.scrollable_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw",
+                                                           width=self.controller.app_width, height=740)
 
         self.scrollable_frame.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
         self.canvas.pack(side="left", fill="both", expand=True)
@@ -1913,15 +1862,9 @@ class MessagesPage(tk.Frame):
 
     def show_frame(self):
         self.tkraise()
-        msg = Message.create_get_follows_msg(self.controller.get_user_id())
-        t = threading.Thread(target=self.profile_worker, args=(msg,), daemon=True)
-        t.start()
 
-    def profile_worker(self, msg):
-        friends = self.controller.request_db(msg)
-        self.after(0, self.on_profile_done, friends)
+        friends = self.controller.request_db(Message.create_get_follows_msg(self.controller.get_user_id()))
 
-    def on_profile_done(self, friends):
         if len(friends["data"]) > 0:
             self.load_chat_rooms(friends)
         else:
@@ -1929,16 +1872,20 @@ class MessagesPage(tk.Frame):
 
     def load_new_message_controls(self):
         # ...
-        dot3_logo = tk.Label(self, image=self.dotdotdot_logo, bd=0, highlightthickness=0, background=Color.DARK_GRAY, borderwidth=0)
+        dot3_logo = tk.Label(self, image=self.dotdotdot_logo, bd=0, highlightthickness=0, background=Color.DARK_GRAY,
+                             borderwidth=0)
         dot3_logo.place(x=185, y=300)
         # 최대 7개의 친구 사진을 가져와서 디자인 배치
 
         # 채팅 방이 없을 때 문구
-        no_chat_room_message = tk.Label(self, image=self.no_chat_room_message_img, bd=0, highlightthickness=0, background=Color.DARK_GRAY, borderwidth=0)
+        no_chat_room_message = tk.Label(self, image=self.no_chat_room_message_img, bd=0, highlightthickness=0,
+                                        background=Color.DARK_GRAY, borderwidth=0)
         no_chat_room_message.place(x=55, y=500)
 
         # 메시지 추가 버튼
-        new_message_btn = tk.Button(self, image=self.message_btn_img, activebackground=Color.DARK_GRAY, bd=0, background=Color.DARK_GRAY ,relief="flat", highlightthickness=0, command=lambda: self.controller.show_frame(MsgFriendsPage))
+        new_message_btn = tk.Button(self, image=self.message_btn_img, activebackground=Color.DARK_GRAY, bd=0,
+                                    background=Color.DARK_GRAY, relief="flat", highlightthickness=0,
+                                    command=lambda: self.controller.show_frame(MsgFriendsPage))
         new_message_btn.place(x=180, y=580)
 
     def load_chat_rooms(self, friends):
@@ -1961,7 +1908,7 @@ class MessagesPage(tk.Frame):
             chatroom_created = chatroom_info["chatroom_date"]
 
             my_id = self.controller.get_user_id()
-            
+
             if user_id1 == my_id:
                 another_id = user_id2
             else:
@@ -1975,12 +1922,14 @@ class MessagesPage(tk.Frame):
             last_chat = chat_data["data"][-1]["content"]
             last_chat_date = chat_data["data"][-1]["message_time"]
 
-            frame = self.create_chatroom_frame(another_id, user_name, last_chat, last_chat_date, chatroom_info)
+            frame = self.create_chatroom_frame(another_id, user_name, user_profile_img, last_chat, last_chat_date,
+                                               chatroom_info)
             frame.pack(fill="x", pady=2, padx=5)
             self.bind_mousewheel_recursive(frame)
 
-    def create_chatroom_frame(self, id, name, last_msg, last_date, chatroom_info):
-        frame = ChatRoomItemFrame(self.scrollable_frame, self.controller, id, name, last_msg, last_date, chatroom_info)
+    def create_chatroom_frame(self, id, name, profile_img, last_msg, last_date, chatroom_info):
+        frame = ChatRoomItemFrame(self.scrollable_frame, self.controller, id, name, profile_img, last_msg, last_date,
+                                  chatroom_info)
         return frame
 
     def bind_mousewheel_recursive(self, widget):
@@ -1989,35 +1938,41 @@ class MessagesPage(tk.Frame):
 
         for child in widget.winfo_children():
             self.bind_mousewheel_recursive(child)
-    
+
     def on_mousewheel_event(self, event):
         """
         스크롤 이벤트
         """
         self.canvas.yview_scroll(int((event.delta / 120)), "units")
 
+
 class ChatRoomItemFrame(tk.Frame):
     """
     채팅방 프레임
     """
-    def __init__(self, parent, controller, id, name, last_msg, last_datetime, chatroom_info):
+
+    def __init__(self, parent, controller, id, name, profile_img, last_msg, last_datetime, chatroom_info):
         super().__init__(parent)
         self.controller = controller
         self.config(bg="#1e1e1e", relief="flat", highlightbackground="gray", highlightthickness=0)
         self.frame_id = id
         self.chatroom_info = chatroom_info
 
-        self.img = self.controller.load_profile_img(id).resize((40, 40))
+        try:
+            img = Image.open(self.controller.load_profile_img()).resize((40, 40))
+        except:
+            img = Image.open(img_path + "noImageMan.png").resize((40, 40))  # 이미지 불러오기 실패 시
 
-        croped_img = self.controller.crop_img_circle(self.img)
+        croped_img = self.controller.crop_img_circle(img)
         self.profile_photo = ImageTk.PhotoImage(croped_img)
-        image_label = tk.Label(self, image=self.profile_photo , bg="#1e1e1e")
+        image_label = tk.Label(self, image=self.profile_photo, bg="#1e1e1e")
         image_label.pack(side="left", padx=10, pady=5)
         image_label.bind("<Button-1>", lambda e: self.on_click())
 
         text_frame = tk.Frame(self, bg="#1e1e1e")
         text_frame.bind("<Button-1>", lambda e: self.on_click())
-        name_label = tk.Label(text_frame, text=id, fg="white", font=("Arial", 12, "bold"), anchor="w", bg="#1e1e1e", width=39)
+        name_label = tk.Label(text_frame, text=id, fg="white", font=("Arial", 12, "bold"), anchor="w", bg="#1e1e1e",
+                              width=39)
         name_label.bind("<Button-1>", lambda e: self.on_click())
         status_label = tk.Label(text_frame, text=name, font=("Arial", 10), anchor="w", bg="#1e1e1e", fg="gray")
         status_label.bind("<Button-1>", lambda e: self.on_click())
@@ -2034,7 +1989,8 @@ class ChatRoomItemFrame(tk.Frame):
 
     def on_click(self):
         self.controller.show_frame(ChatRoomPage, self.chatroom_info)
-            
+
+
 # 메시지 친구 목록 페이지
 class MsgFriendsPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -2042,7 +1998,7 @@ class MsgFriendsPage(tk.Frame):
         self.controller = controller
         self.parent = parent
         self.selected_friend = None
-        self.friends_list = []
+        # self.friends_list = []
 
         self.cancel_img = ImageTk.PhotoImage(Image.open(img_path + 'cancel.png'))
         self.new_message_text_img = ImageTk.PhotoImage(Image.open(img_path + 'newMessageText.png'))
@@ -2052,23 +2008,28 @@ class MsgFriendsPage(tk.Frame):
         self.configure(bg=Color.DARK_GRAY)
 
         # cencel 버튼
-        cencel_btn = tk.Button(self, image=self.cancel_img, bd=0, background=Color.DARK_GRAY, activebackground=Color.DARK_GRAY, highlightthickness=0, command=lambda: self.on_click_cancel())
+        cencel_btn = tk.Button(self, image=self.cancel_img, bd=0, background=Color.DARK_GRAY,
+                               activebackground=Color.DARK_GRAY, highlightthickness=0,
+                               command=lambda: self.on_click_cancel())
         cencel_btn.place(x=20, y=50)
 
         chat_btn = tk.Button(self, text="chat", command=lambda: self.chat())
-        chat_btn.place(x= 400, y=50)
+        chat_btn.place(x=400, y=50)
 
         # New message 문구
-        new_message_text = tk.Label(self, image=self.new_message_text_img, bd=0, highlightthickness=0, background=Color.DARK_GRAY, borderwidth=0)
+        new_message_text = tk.Label(self, image=self.new_message_text_img, bd=0, highlightthickness=0,
+                                    background=Color.DARK_GRAY, borderwidth=0)
         new_message_text.place(x=170, y=50)
 
         # To: Suggested 문구
-        to_suggested_text = tk.Label(self, image=self.to_suggested_text_img, bd=0, highlightthickness=0, background=Color.DARK_GRAY, borderwidth=0)
+        to_suggested_text = tk.Label(self, image=self.to_suggested_text_img, bd=0, highlightthickness=0,
+                                     background=Color.DARK_GRAY, borderwidth=0)
         to_suggested_text.place(x=0, y=90)
 
         # 친구 목록
         self.list_frame = tk.Frame(self)
-        self.list_frame.place(x=0, y=140, width=self.controller.app_width - 5, height=self.controller.contents_frame_height - 140)
+        self.list_frame.place(x=0, y=140, width=self.controller.app_width - 5,
+                              height=self.controller.contents_frame_height - 140)
 
         self.canvas = tk.Canvas(self.list_frame, bg=Color.DARK_GRAY, highlightthickness=0)
 
@@ -2091,20 +2052,21 @@ class MsgFriendsPage(tk.Frame):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def show_frame(self):
-        self.tkraise()     
+        self.tkraise()
         self.load_friends()
 
     def on_click_cancel(self):
         self.controller.show_frame(MessagesPage)
 
-    def profile_worker(self, msg):
-        res = self.controller.request_db(msg)
-        self.after(0, self.on_profile_done, res)
+    def load_friends(self):
+        self.selected_friend = None
 
-    def on_profile_done(self, res):
+        msg = Message.create_get_follows_msg(self.controller.get_user_id())
+        res = self.controller.request_db(msg)
+
         for widget in self.scrollable_frame.winfo_children():
             widget.destroy()
-        self.friends_list.clear()
+        # self.friends_list.clear()
 
         for friend in res["data"]:
             msg = Message.create_get_userinfo_msg(friend[0])
@@ -2115,15 +2077,12 @@ class MsgFriendsPage(tk.Frame):
             frame.pack(fill="x", pady=2, padx=5)
             self.bind_mousewheel_recursive(frame)
 
-    def load_friends(self):
-        self.selected_friend = None
-        msg = Message.create_get_follows_msg(self.controller.get_user_id())
-        t = threading.Thread(target=self.profile_worker, args=(msg,), daemon=True)
-        t.start()
+        # for f in self.friends_list:
+        #     f.pack(fill="x", pady=2, padx=5)
 
     def create_friend_item(self, id, name, profile_img):
         frame = FriendFrame(self.scrollable_frame, self, id, name, profile_img)
-        self.friends_list.append(frame)
+        # self.friends_list.append(frame)
         return frame
 
     def bind_mousewheel_recursive(self, widget):
@@ -2161,7 +2120,7 @@ class MsgFriendsPage(tk.Frame):
         # 채팅 방이 없다면 채팅 방을 생성한다.
         if not res["data"]:
             now = datetime.datetime.now()
-            msg = Message.create_add_chatroom_msg(self.controller.get_user_id(), self.selected_friend, now) 
+            msg = Message.create_add_chatroom_msg(self.controller.get_user_id(), self.selected_friend, now)
             chatroom_data = self.controller.request_db(msg)
             chatroom_data = chatroom_data["data"]
 
@@ -2170,6 +2129,7 @@ class MsgFriendsPage(tk.Frame):
             chatroom_data = res["data"][0]
 
         self.controller.show_frame(ChatRoomPage, chatroom_data)
+
 
 # 친구 목록 아이템
 class FriendFrame(tk.Frame):
@@ -2193,7 +2153,8 @@ class FriendFrame(tk.Frame):
 
         text_frame = tk.Frame(self, bg="#1e1e1e")
         text_frame.bind("<Button-1>", lambda e: controller.on_click(self))
-        name_label = tk.Label(text_frame, text=id, fg="white", font=("Arial", 12, "bold"), anchor="w", bg="#1e1e1e", width=39)
+        name_label = tk.Label(text_frame, text=id, fg="white", font=("Arial", 12, "bold"), anchor="w", bg="#1e1e1e",
+                              width=39)
         name_label.bind("<Button-1>", lambda e: controller.on_click(self))
         status_label = tk.Label(text_frame, text=name, font=("Arial", 10), anchor="w", bg="#1e1e1e", fg="gray")
         status_label.bind("<Button-1>", lambda e: controller.on_click(self))
@@ -2203,6 +2164,7 @@ class FriendFrame(tk.Frame):
         text_frame.pack(side="left", fill="x", expand=True)
 
         self.bind("<Button-1>", lambda e: controller.on_click(self))
+
 
 # 채팅방
 class ChatRoomPage(tk.Frame):
@@ -2244,21 +2206,28 @@ class ChatRoomPage(tk.Frame):
         self.message_bar_entry = tk.Entry(self, bd=0, fg="white", background="#1e1e1e", font=self.message_bar_font)
         self.message_bar_entry.place(x=85, y=870, width=350)
         self.message_bar_entry.insert(0, self.msg_default_text)
-        self.message_bar_entry.bind('<Button-1>', lambda e: self.controller.on_entry_click(self.message_bar_entry, self.msg_default_text))
-        self.message_bar_entry.bind('<FocusOut>', lambda e: self.controller.on_focusout(self.message_bar_entry, self.msg_default_text))
+        self.message_bar_entry.bind('<Button-1>', lambda e: self.controller.on_entry_click(self.message_bar_entry,
+                                                                                           self.msg_default_text))
+        self.message_bar_entry.bind('<FocusOut>', lambda e: self.controller.on_focusout(self.message_bar_entry,
+                                                                                        self.msg_default_text))
         self.message_bar_entry.bind('<Return>', lambda e: self.send_text())
 
         # 파일 추가 버튼
-        new_message_btn = tk.Button(self, image=self.add_file_img, activebackground=Color.DARK_GRAY, bd=0, background=Color.DARK_GRAY ,relief="flat", highlightthickness=0, command=lambda: self.send_text())
+        new_message_btn = tk.Button(self, image=self.add_file_img, activebackground=Color.DARK_GRAY, bd=0,
+                                    background=Color.DARK_GRAY, relief="flat", highlightthickness=0,
+                                    command=lambda: self.send_text())
         new_message_btn.place(x=10, y=850)
 
         # 이전 버튼
-        new_message_btn = tk.Button(self, image=self.back_img, activebackground=Color.DARK_GRAY, bd=0, background=Color.DARK_GRAY ,relief="flat", highlightthickness=0, command=lambda: self.move_back())
+        new_message_btn = tk.Button(self, image=self.back_img, activebackground=Color.DARK_GRAY, bd=0,
+                                    background=Color.DARK_GRAY, relief="flat", highlightthickness=0,
+                                    command=lambda: self.move_back())
         new_message_btn.place(x=20, y=40)
 
         # 메시지 리스트
         self.list_frame = tk.Frame(self)
-        self.list_frame.place(x=0, y=100, width=self.controller.app_width, height=self.controller.contents_frame_height - 120)
+        self.list_frame.place(x=0, y=100, width=self.controller.app_width,
+                              height=self.controller.contents_frame_height - 120)
 
         self.canvas = tk.Canvas(self.list_frame, background=Color.DARK_GRAY, highlightthickness=0)
 
@@ -2267,7 +2236,8 @@ class ChatRoomPage(tk.Frame):
         self.canvas.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
 
         # 캔버스에 스크롤 가능한 프레임 넣기
-        self.scrollable_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw", width=self.controller.app_width)
+        self.scrollable_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw",
+                                                           width=self.controller.app_width)
 
         self.scrollable_frame.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
         self.canvas.pack(side="left", fill="both", expand=True)
@@ -2281,8 +2251,8 @@ class ChatRoomPage(tk.Frame):
         self.chat_user2 = chatroom_data["user_id2"]
         self.created_date = chatroom_data["chatroom_date"]
         self.name_lb.config(text=self.chat_user2)
-    
-        self.tkraise() 
+
+        self.tkraise()
         self.clear_chat()
 
         self.isOnFrame = True
@@ -2303,21 +2273,28 @@ class ChatRoomPage(tk.Frame):
 
         while self.isOnFrame:
             # 마지막 업데이트 메시지 시간을 포함하여 get_chat_data 요청 보내기
-            messages = self.controller.request_db(Message.create_get_chat_data_msg(self.chatroom_id, self.last_message_time))
-            
+            messages = self.controller.request_db(
+                Message.create_get_chat_data_msg(self.chatroom_id, self.last_message_time))
+
             if messages["data"]:
                 for i, msg in enumerate(messages["data"]):
-                    prev_day = datetime.datetime.strptime(str(messages["data"][i - 1]["message_time"]).split(" ")[0], "%Y-%m-%d").day
-                    now_day = datetime.datetime.strptime(str(messages["data"][i]["message_time"]).split(" ")[0], "%Y-%m-%d").day
+                    prev_day = datetime.datetime.strptime(str(messages["data"][i - 1]["message_time"]).split(" ")[0],
+                                                          "%Y-%m-%d").day
+                    now_day = datetime.datetime.strptime(str(messages["data"][i]["message_time"]).split(" ")[0],
+                                                         "%Y-%m-%d").day
 
                     # 이전 메시지와 날짜(일)가 다르면
                     if now_day != prev_day:
                         # 구분선 추가
-                        self.create_sepline(self.scrollable_frame, datetime.datetime.strptime(str(msg["message_time"]).split(" ")[0], "%Y-%m-%d").date())
+                        self.create_sepline(self.scrollable_frame,
+                                            datetime.datetime.strptime(str(msg["message_time"]).split(" ")[0],
+                                                                       "%Y-%m-%d").date())
                         # 메시지 말풍선 gui 생성 후 도시하기
-                        self.create_msg_frame(self.scrollable_frame, msg["user_id"], msg["content"], msg["image"], msg["message_time"], True)
+                        self.create_msg_frame(self.scrollable_frame, msg["user_id"], msg["content"], msg["image"],
+                                              msg["message_time"], True)
                     else:
-                        self.create_msg_frame(self.scrollable_frame, msg["user_id"], msg["content"], msg["image"], msg["message_time"], False)
+                        self.create_msg_frame(self.scrollable_frame, msg["user_id"], msg["content"], msg["image"],
+                                              msg["message_time"], False)
 
                 # 마지막으로 업데이트한 메시지 시간을 저장
                 self.last_message_time = messages["data"][-1]["message_time"]
@@ -2345,8 +2322,8 @@ class ChatRoomPage(tk.Frame):
         if text != self.msg_default_text and text:
             # 메시지 데이터 정의 후 메시지 전송하기
             data = MessageData.create_msg_data(
-                user_id=my_id, 
-                chatroom_id=self.chatroom_id, 
+                user_id=my_id,
+                chatroom_id=self.chatroom_id,
                 content=text,
                 image="",
                 message_time=datetime.datetime.now())
@@ -2373,10 +2350,10 @@ class ChatRoomPage(tk.Frame):
 
         # 채팅 입력 및 전송
         # 서버로 채팅 전송
-        
+
     def update_scrollregion(self, event):
         self.canvas.config(scrollregion=self.canvas.bbox("all"))
-    
+
     def on_mousewheel_event(self, event):
         self.canvas.yview_scroll(int((-1 * event.delta / 120)), "units")
 
@@ -2411,11 +2388,13 @@ class ChatRoomPage(tk.Frame):
             except Exception as e:
                 print("이미지 로딩 오류:", e)
         else:
-            text_label = tk.Label(msg_bubble, text=content, font=font, fg=text_color, bg=bg_color, wraplength=250, justify="left")
+            text_label = tk.Label(msg_bubble, text=content, font=font, fg=text_color, bg=bg_color, wraplength=250,
+                                  justify="left")
             text_label.pack()
 
         # 시간 표시
-        time_label = tk.Label(wrapper_frame, text=str(message_time)[-8:-3], font=time_font, fg="gray", bg=Color.DARK_GRAY)
+        time_label = tk.Label(wrapper_frame, text=str(message_time)[-8:-3], font=time_font, fg="gray",
+                              bg=Color.DARK_GRAY)
         time_label.pack(anchor="e" if is_mine else "w", padx=5)
 
         # 스크롤 하단 고정
@@ -2428,6 +2407,7 @@ class ChatRoomPage(tk.Frame):
 
         for child in widget.winfo_children():
             self.bind_mousewheel_recursive(child)
+
 
 # 활동 내역 페이지
 class ActivityPage(tk.Frame):
@@ -2443,6 +2423,7 @@ class ActivityPage(tk.Frame):
 
     def show_frame(self):
         self.tkraise()
+
 
 # ==== 실행 ====
 if __name__ == "__main__":
