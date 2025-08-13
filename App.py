@@ -1648,7 +1648,7 @@ class PostFeed(tk.Frame):
         )
 
         # ★ 통신은 워커 스레드에서
-        t = threading.Thread(target=self._post_worker, args=(msg,), daemon=True)
+        t = threading.Thread(target=self.post_worker, args=(msg,), daemon=True)
         t.start()
 
     def post_worker(self, msg):
@@ -2173,6 +2173,7 @@ class ChatRoomPage(tk.Frame):
             res = self.controller.request_db(msg)
             self.message_bar_entry.delete(0, tk.END)
 
+        # TODO 알림 기능 구현 중
         if self.chat_user1 == my_id:
             to_user_id = self.chat_user2
         else:
@@ -2258,8 +2259,6 @@ class ActivityPage(tk.Frame):
         label.pack()
 
         controller.place_menu_bar(self, EnumMenuBar.ACTIVITY)
-
-        
 
     def show_frame(self):
         self.tkraise()
