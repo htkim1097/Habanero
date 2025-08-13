@@ -995,75 +995,6 @@ class MyPage(tk.Frame):
                 border.pack(fill="x", pady=10)
 
 
-                imgLabel = tk.Label(leftFrame,image= self.profile_img, bg=Color.DARK_GRAY)
-                imgLabel.pack(anchor="n")
-                imgLabel.image = self.profile_img
-
-                contentArea = tk.Frame(rightFrame, bg=Color.DARK_GRAY)
-                contentArea.pack(fill="x", anchor="w")
-
-                topInfo = tk.Frame(contentArea, bg=Color.DARK_GRAY)
-                topInfo.pack(anchor="w", pady=(0, 2))
-
-                idLabel = tk.Label(topInfo, text=feed_data["id"], fg="white", bg=Color.DARK_GRAY, font=("Arial", 11))
-                idLabel.pack(side="left")
-
-                # 시간 계산
-                str_time = str(feed_data["writed_time"])
-                post_time = datetime.datetime.strptime(str_time, "%Y-%m-%d %H:%M:%S")
-                now = datetime.datetime.now()
-                diff = now - post_time
-                if diff.days >= 1:
-                   postTime = f"{diff.days} day ago"
-                elif diff.seconds >= 3600:
-                   postTime = f"{diff.seconds // 3600}h"
-                elif diff.seconds >= 60:
-                   postTime = f"{diff.seconds // 60}m"
-                else:
-                   postTime = f"{diff.seconds}s"
-
-                timeLabel = tk.Label(topInfo, text=postTime, fg="gray", bg=Color.DARK_GRAY, font=("Arial", 9))
-                timeLabel.pack(side="left", padx=(8, 0))
-
-                # 게시글 내용
-                feedLabel = tk.Label(contentArea, text=feed_data["content"], fg="white", bg=Color.DARK_GRAY,
-                                    wraplength=400, justify="left", font=("맑은고딕", 11))
-                feedLabel.pack(anchor="w", pady=(0, 10))
-
-                # 게시글 이미지(decode_image 함수 사용 버전)
-                pil_img = self.controller.decode_image(feed_data["image"])
-
-                if pil_img is not None:
-                    image = Image.open(pil_img).resize((300, 300))
-                    self.img = ImageTk.PhotoImage(image)
-                    imgLabel = tk.Label(contentArea, image=self.img, bg=Color.DARK_GRAY)
-                    imgLabel.pack(anchor="w", pady=(0, 10))
-
-                # 버튼 영역(좋아요, 댓글, 리포스트, 공유 버튼)
-                btnFrame = tk.Frame(rightFrame, bg=Color.DARK_GRAY)
-                btnFrame.pack(anchor="w", pady=(0, 5))
-
-                self.likeBtn = tk.Button(btnFrame, image=self.like_images[self.like_state], bd=0,
-                                        background=Color.DARK_GRAY,
-                                        activebackground=Color.DARK_GRAY, command=self.toggle_like)
-                self.likeBtn.pack(side="left")
-
-                self.likeCnt = tk.Label(btnFrame, text=feed_data["like_cnt"], fg="white", bg=Color.DARK_GRAY)
-                self.likeCnt.pack(side="left", padx=(2, 20))
-
-                commentBtn = tk.Button(btnFrame, image=self.commentimg, bd=0, background=Color.DARK_GRAY,
-                                      activebackground=Color.DARK_GRAY)
-                commentBtn.pack(side="left")
-                commentCnt = tk.Label(btnFrame, text=feed_data["comment_cnt"], fg="white", bg=Color.DARK_GRAY)
-                commentCnt.pack(side="left", padx=(2, 15))
-
-                repostBtn = tk.Button(btnFrame, image=self.repostimg, bd=0, background=Color.DARK_GRAY,
-                                     activebackground=Color.DARK_GRAY)
-                repostBtn.pack(side="left", padx=(0, 20))
-
-                msgBtn = tk.Button(btnFrame, image=self.msgimg, bd=0, background=Color.DARK_GRAY,
-                                  activebackground=Color.DARK_GRAY)
-                msgBtn.pack(side="left")
     # 탭 전환 시 버튼 이미지 전환
     def switch_tabs(self, tab_name):
         self.show_sub_frame(tab_name)
@@ -1178,19 +1109,6 @@ class MyPage(tk.Frame):
 
     def hide_edit_popup(self):
         self.editframe.place_forget()
-
-    def toggle_like(self):
-        # 좋아요 상태 토글
-        self.like_state = 1 - self.like_state
-        self.likeBtn.config(image=self.like_images[self.like_state])
-
-        # 좋아요 수 변경
-        current_likes = int(self.likeCnt.cget("text"))
-        if self.like_state == 1:
-            current_likes += 1
-        else:
-            current_likes -= 1
-        self.likeCnt.config(text=str(current_likes))
 
 
 # 스레드 페이지
