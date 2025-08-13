@@ -954,9 +954,9 @@ class PostDetailPage(tk.Frame):
 
     def load_comments(self):
         """서버에서 post_id의 댓글 목록을 받아 실행"""
-        # TODO: 서버 API가 있으면 사용. 임시로 예시:
-        for w in self.comments_container.winfo_children():
-            w.destroy()
+        # # TODO: 서버 API가 있으면 사용. 임시로 예시:
+        # for w in self.comments_container.winfo_children():
+        #     w.destroy()
 
         # 서버에서 댓글 가져오기 (예: post_id의 자식들)
         msg = Message.create_get_comments(post_id=self.post_id)
