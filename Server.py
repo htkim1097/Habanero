@@ -67,13 +67,13 @@ class ThreadsServer:
                         recv_data = recv_data.split(b"<EOF>")[0]
                         break
 
-                    print(f"[데이터 수신 {address}] - {recv_data}")
+                    # print(f"[데이터 수신 {address}] - {recv_data}")
 
                 if recv_data:
                     repr_data = eval(recv_data.decode())
                     res = self.handle_data(repr_data)
                     client_socket.send((str(res) + "<EOF>").encode())
-                    print(f"[데이터 송신 {address}] - {res}")
+                    # print(f"[데이터 송신 {address}] - {res}")
 
         except Exception as e:
             print(f"[오류:handle_client] - {e}")
@@ -654,7 +654,7 @@ class ThreadsServer:
                     msg["profile_image"],
                     msg["user_id"],
                 )
-                
+
             if query:
                 res = self.send_query_safty(query=query, param=params)
     
@@ -728,14 +728,13 @@ class ThreadsServer:
         )
 
         cur = conn.cursor()
-        print(f"\n[쿼리]: {query}")
         cur.execute(query)
 
         res = cur.fetchall()
 
         conn.close()
 
-        print(f"[DB 결과] - {res}")
+        # print(f"[DB 결과] - {res}")
         return res
     
     def send_query_safty(self, query, param):
@@ -755,14 +754,13 @@ class ThreadsServer:
         )
 
         cur = conn.cursor()
-        print(f"\n[쿼리]: {query}")
         cur.execute(query, param)
 
         res = cur.fetchall()
 
         conn.close()
 
-        print(f"[DB 결과] - {res}")
+        # print(f"[DB 결과] - {res}")
         return res
         
     def stop_server(self):

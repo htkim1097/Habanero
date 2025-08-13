@@ -127,6 +127,13 @@ class App(tk.Tk):
         """
         login_frame = self.frames["LoginPage"]
         login_frame.error_frame.place(x=60, y=300)
+    
+    def show_error_popup_join(self):
+        """
+        오류 팝업을 띄운다.
+        """
+        login_frame = self.frames["JoinPage"]
+        login_frame.error_frame.place(x=60, y=300)
 
     def show_complete_popup(self):
         """
@@ -558,12 +565,32 @@ class JoinPage(tk.Frame):
         self.checkImg = ImageTk.PhotoImage(Image.open(img_path + "check.png"))
         self.checkBtn = tk.Button(self.complete_frame, image=self.checkImg, bd=0, command=lambda:self.confirm_register_message())
         self.checkBtn.image = self.checkImg
-        self.checkBtn.place(x=300, y=15)
+        self.checkBtn.place(x=280, y=15)
 
         #뒤로 가기 버튼
         self.backImg = ImageTk.PhotoImage(Image.open(img_path + "back.png"))
         self.backBtn = tk.Button(self, image=self.backImg, bd=0, command=lambda:controller.show_frame(LoginPage))
         self.backBtn.place(x=30, y=40)
+
+        # 회원가입 에러 창
+        self.error_frame = tk.Frame(self, width=350, height=180, bg="white")
+        self.error_frame.place(x=60, y=400)
+        self.error_frame.place_forget()
+
+        self.errorImg = ImageTk.PhotoImage(Image.open(img_path + "error.png"))
+        frame = tk.Label(self.error_frame, image=self.errorImg, bg="white")
+        frame.image = self.errorImg
+        frame.pack()
+
+        self.closeImg = ImageTk.PhotoImage(Image.open(img_path + "close.png"))
+        self.closeBtn = tk.Button(self.error_frame, image=self.closeImg, bd=0, command=self.hide_error)
+        self.closeBtn.image = self.closeImg
+        self.closeBtn.place(x=300, y=15)
+
+        self.checkImg = ImageTk.PhotoImage(Image.open(img_path + "check.png"))
+        self.checkBtn = tk.Button(self.error_frame, image=self.checkImg, bd=0, command=self.hide_error)
+        self.checkBtn.image = self.checkImg
+        self.checkBtn.place(x=280, y=130)
 
     def confirm_register_message(self):
         self.jidEntry.delete(0, tk.END)
@@ -579,6 +606,9 @@ class JoinPage(tk.Frame):
         self.controller.show_frame(LoginPage)
 
 
+    def hide_error(self):
+        self.error_frame.place_forget()
+        
     #회원 가입
     def process_join(self):
         """
@@ -602,7 +632,7 @@ class JoinPage(tk.Frame):
 
         # 회원 가입 실패
         else:
-            self.parent.show_error_popup()
+            self.parent.show_error_popup_join()
 
     def create_register_msg(self, id, password, email, name):
         return Message.create_register_msg(id=id, password=password, email=email, name=name)
@@ -843,11 +873,11 @@ class MyPage(tk.Frame):
                                 activebackground=Color.DARK_GRAY, command=lambda: self.switch_tabs("Reposts"))
         self.mp4Btn.place(x=340, y=0)
 
-        self.lineFrame = tk.Frame(self.FrameTabs, bg="#666768")
-        self.lineFrame.pack(fill="x", pady=(50, 0))
+        # self.lineFrame = tk.Frame(self.FrameTabs, bg="#666768")
+        # self.lineFrame.pack(fill="x", pady=(50,0))
 
         # 탭 별 프레임 생성
-        self.FrameContent = tk.Frame(self, bg=Color.DARK_GRAY, height=450)
+        self.FrameContent = tk.Frame(self, bg=Color.DARK_GRAY, height=550)
         self.FrameContent.pack(side="top", fill="x")
 
         # 게시글 없을 시 프레임에 나타나는 메시지
@@ -908,9 +938,6 @@ class MyPage(tk.Frame):
 
         self.canvas.pack(side="left", fill="both", expand=True)
 
-        if self.frames["Threads"]:
-            self.my_thread_load_feed()
-
         controller.place_menu_bar(self, EnumMenuBar.MY_PAGE)
 
         # 피드 리스트 저장용
@@ -936,9 +963,9 @@ class MyPage(tk.Frame):
 
     def my_load_feed(self):
         # 기존 피드 제거
-        for widget in self.scrollable_frame.winfo_children():
-            widget.destroy()
-        self.feed_items.clear()
+        # for widget in self.frames["Threads"].winfo_children():
+        #     widget.destroy()
+        # self.feed_items.clear()
 
         msg = Message.create_get_feed_msg(None)
         res = self.controller.request_db(msg)
@@ -997,6 +1024,10 @@ class MyPage(tk.Frame):
     # 탭 전환 시 버튼 이미지 전환
     def switch_tabs(self, tab_name):
         self.show_sub_frame(tab_name)
+
+        if "Threads" == tab_name:
+            self.my_thread_load_feed()
+            print("체크")
 
         for name, btn in self.tab_buttons.items():
             if name == tab_name:
@@ -1081,9 +1112,9 @@ class MyPage(tk.Frame):
             img_data = b'None'
 
         msg = Message.create_update_profile(
-                    user_id=self.controller.get_user_id(),
-                    user_name=new_name,
-                    profile_image=img_data
+            user_id=self.controller.get_user_id(),
+            user_name=new_name,
+            profile_image=img_data
         )
 
         t = threading.Thread(target=self.profile_worker, args=(msg,), daemon=True)
@@ -1771,6 +1802,9 @@ class PostFeed(tk.Frame):
         # 버튼 복구(옵션)
         self.postBtn.config(state="normal")
         self.photoLabel.config(image="")
+        # 33333333333333333333333
+        self.textEntry.delete("1.0", tk.END)
+        self.textEntry.insert("1.0", "What's new?")
         self.selected_photo = None
 
         if res and res.get("status") == 1:
@@ -2133,7 +2167,7 @@ class ChatRoomPage(tk.Frame):
         self.chat_user2 = None
         self.created_date = None
         self.isOnFrame = False
-        self.chat_update_interval = 1
+        self.chat_update_interval = 0.5
         self.message_list = []
         self.last_message_time = ""
 
