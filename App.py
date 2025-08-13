@@ -792,30 +792,29 @@ class MyPage(tk.Frame):
         self.frame.image = self.edit_profileImg
         self.frame.pack()
 
-        self.namenptImg = ImageTk.PhotoImage(Image.open(img_path + 'namenpt.png'))
-        self.namenptLabel = tk.Label(self.editframe, image=self.namenptImg, bg=Color.DARK_GRAY)
-        self.namenptLabel.image = self.namenptImg
-        self.namenptLabel.place(x=27, y=150)
-
-        self.addprofileImg = ImageTk.PhotoImage(Image.open(img_path + 'addprofile.png'))
-        self.addprofileButton= tk.Button(self.editframe, image=self.addprofileImg,bd=0 ,bg=Color.DARK_GRAY,activebackground=Color.DARK_GRAY,
-                                         command= self.select_profile_image)
+        # crop_profile = Image.open(img_path + 'addprofile.png')
+        # crop_profile = self.controller.crop_img_circle(crop_profile)
+        self.addprofileImg = ImageTk.PhotoImage(Image.open(img_path + 'addprofile2.png'))
+        # lllllllllllllllllllllllll
+        self.addprofileButton = tk.Button(self.editframe, image=self.addprofileImg, bd=0, bg=Color.DARK_GRAY,
+                                          activebackground=Color.DARK_GRAY,
+                                          command=self.select_profile_image)
         self.addprofileButton.image = self.addprofileImg
-        self.addprofileButton.place(x=305, y=160)
+        self.addprofileButton.place(x=315, y=110)
 
         # 수정 취소 버튼
         self.cancelImg = ImageTk.PhotoImage(Image.open(img_path + 'cancel2.png'))
-        self.cancelBtn = tk.Button(self.editframe, image=self.cancelImg, bd=0, bg=Color.DARK_GRAY, activebackground=Color.DARK_GRAY,
+        self.cancelBtn = tk.Button(self.editframe, image=self.cancelImg, bd=0,bg='gray', activebackground=Color.DARK_GRAY, highlightthickness=0,
                                    command=self.hide_edit_popup)
         self.cancelBtn.place(x=10, y=5)
 
         #이름 수정 entry
-        self.newnameEntry = tk.Entry(self.editframe, width=18, fg="white", bg=Color.DARK_GRAY, font=("고딕", 15, 'bold'), bd=0, highlightthickness=0)
-        self.newnameEntry.place(x=43, y=181)
+        self.newnameEntry = tk.Entry(self.editframe, width=18, fg="white", bg='#181818', font=("고딕", 15, 'bold'), bd=0, highlightthickness=0)
+        self.newnameEntry.place(x=40, y=170)
 
         # 수정 완료 버튼
         self.doneImg = ImageTk.PhotoImage(Image.open(img_path + 'done2.png'))
-        self.doneBtn = tk.Button(self.editframe, image=self.doneImg, bd=0, bg=Color.DARK_GRAY, activebackground=Color.DARK_GRAY,
+        self.doneBtn = tk.Button(self.editframe, image=self.doneImg, bd=0, bg=Color.DARK_GRAY, activebackground=Color.DARK_GRAY, highlightthickness=0,
                                  command= self.save_edit_data)
         self.doneBtn.image = self.doneImg
         self.doneBtn.place(x=320, y=5)
@@ -1109,19 +1108,6 @@ class MyPage(tk.Frame):
 
     def hide_edit_popup(self):
         self.editframe.place_forget()
-
-    def toggle_like(self):
-        # 좋아요 상태 토글
-        self.like_state = 1 - self.like_state
-        self.likeBtn.config(image=self.like_images[self.like_state])
-
-        # 좋아요 수 변경
-        current_likes = int(self.likeCnt.cget("text"))
-        if self.like_state == 1:
-            current_likes += 1
-        else:
-            current_likes -= 1
-        self.likeCnt.config(text=str(current_likes))
 
 
 # 스레드 페이지
