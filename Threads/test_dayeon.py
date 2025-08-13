@@ -1,4 +1,3 @@
-# App.py
 import threading
 import time
 import tkinter as tk

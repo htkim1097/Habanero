@@ -893,7 +893,107 @@ class MyPage(tk.Frame):
 
         self.switch_tabs("Threads")  # 기본 프레임 설정
 
+        # ===== 스크롤 가능한 영역 =====
+        self.list_frame = tk.Frame(self.frames["Threads"], bg=Color.DARK_GRAY)
+        self.list_frame.place(x=0, y=100, width=self.controller.app_width - 5,
+                              height=self.controller.contents_frame_height - 100)
+
+        self.canvas = tk.Canvas(self.list_frame, bg=Color.DARK_GRAY, highlightthickness=0)
+        self.scrollable_frame = tk.Frame(self.canvas, bg=Color.DARK_GRAY)
+        self.scrollable_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw", width=500)
+
+        # 마우스 휠 이벤트 바인딩
+        self.canvas.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
+        self.scrollable_frame.bind("<Configure>", self.on_configure)
+        self.scrollable_frame.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
+
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+        if self.frames["Threads"]:
+            self.my_thread_load_feed()
+
         controller.place_menu_bar(self, EnumMenuBar.MY_PAGE)
+
+        # 피드 리스트 저장용
+        self.feed_items = []
+
+    def on_configure(self, event):
+        """스크롤 크기 동적 조절"""
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def on_mousewheel_event(self, event):
+        if len(self.feed_items) > 1:  # 게시물 많을 때만 스크롤
+            self.canvas.yview_scroll(int((-1 * event.delta / 120)), "units")
+
+    def bind_mousewheel_recursive(self, widget):
+        widget.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
+        widget.bind("<Leave>", lambda e: self.canvas.unbind_all("<MouseWheel>"))
+        for child in widget.winfo_children():
+            self.bind_mousewheel_recursive(child)
+
+    def my_thread_load_feed(self):
+        t = threading.Thread(target=self.my_load_feed, daemon=True)
+        t.start()
+
+    def my_load_feed(self):
+        # 기존 피드 제거
+        for widget in self.scrollable_frame.winfo_children():
+            widget.destroy()
+        self.feed_items.clear()
+
+        msg = Message.create_get_feed_msg(None)
+        res = self.controller.request_db(msg)
+
+        for post_id, feed_data in res["data"].items():
+            if feed_data["id"] == self.controller.get_user_id():
+
+                # 댓글(대댓글) 제외: parent_id가 존재하면 스킵
+                if feed_data.get("parent_id") not in (None, 'None', b'None', '', b''):
+                    continue
+
+                # 작성자의 프로필 이미지 받아오기
+                msg = Message.create_get_userinfo_msg(feed_data["id"])
+                user_info = self.controller.request_db(msg)
+                profile_img_path = None
+                pImg = user_info["data"]["profile_img"]
+
+                if user_info["status"] == EnumMsgStatus.SUCCESS and pImg not in (None, 'None', b'None', '', b'',
+                                                                                 b"b'None'"):
+                    bio = self.controller.decode_image(pImg)
+                    profile_img_path = Image.open(bio).resize((40, 40))
+                else:
+                    profile_img_path = Image.open(img_path + "profileImg.png").resize((40, 40))
+
+                self.likeimg = ImageTk.PhotoImage(Image.open(img_path + 'like.png').resize((20, 20)))
+                self.likedimg = ImageTk.PhotoImage(Image.open(img_path + 'like_red.png').resize((20, 17)))
+                self.commentimg = ImageTk.PhotoImage(Image.open(img_path + 'reply.png').resize((20, 20)))
+                self.repostimg = ImageTk.PhotoImage(Image.open(img_path + 'repost.png').resize((20, 20)))
+                self.msgimg = ImageTk.PhotoImage(Image.open(img_path + 'msg.png').resize((20, 20)))
+                # 좋아요 이미지 리스트 [빈하트, 빨간하트]
+                self.like_images = [self.likeimg, self.likedimg]  # 0: 빈 하트, 1: 빨간 하트
+                self.like_state = 0
+
+                profile_img_path = self.controller.crop_img_circle(profile_img_path)
+                feedItem = FeedItemFrame(
+                    parent=self.scrollable_frame,
+                    controller=self.controller,
+                    profile_img_path=profile_img_path,
+                    feed_data=feed_data,
+                    like_images=self.like_images,
+                    comment_img=self.commentimg,
+                    repost_img=self.repostimg,
+                    msg_img=self.msgimg,
+                    post_id=post_id
+                )
+                feedItem.pack(fill="x", pady=(0, 5))
+                self.feed_items.append(feedItem)
+                self.bind_mousewheel_recursive(feedItem)
+
+                # 구분선
+                border = tk.Frame(self.scrollable_frame, bg="#323232", height=1)
+                border.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self.on_mousewheel_event))
+                border.pack(fill="x", pady=10)
+
 
     # 탭 전환 시 버튼 이미지 전환
     def switch_tabs(self, tab_name):
